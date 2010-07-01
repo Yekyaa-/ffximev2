@@ -2,4 +2,4 @@
 = Introduction =
 [Welcome Home]
 = Details =
-[Test Blahblah]
+[test Blahblah]
