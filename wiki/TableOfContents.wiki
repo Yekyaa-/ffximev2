@@ -1,9 +1,9 @@
 #summary Table Of Contents Sidebar
 
  * [Welcome Home]
- * Random crap
-    * [Test Blah1]
-    * [Test Blah2]
+ * [QuickStart Quick Start Guide]
+ * *Information*
+    * [Using Using the Macro Editor]
     * [Test Blah3]
     * [Test Blah4]
  * [Test Line1]
