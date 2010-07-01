@@ -40,6 +40,8 @@ namespace FFXI_ME_v2
             this.numericUpDownMaxMenuItems = new System.Windows.Forms.NumericUpDown();
             this.label3 = new System.Windows.Forms.Label();
             this.groupBox1 = new System.Windows.Forms.GroupBox();
+            this.label4 = new System.Windows.Forms.Label();
+            this.comboBoxEnterKeyOption = new System.Windows.Forms.ComboBox();
             this.checkBoxShowBlankBooks = new System.Windows.Forms.CheckBox();
             this.checkBoxMinimize = new System.Windows.Forms.CheckBox();
             this.groupBox4 = new System.Windows.Forms.GroupBox();
@@ -52,8 +54,6 @@ namespace FFXI_ME_v2
             this.buttonCancel = new System.Windows.Forms.Button();
             this.buttonApply = new System.Windows.Forms.Button();
             this.toolTipForOptions = new System.Windows.Forms.ToolTip(this.components);
-            this.comboBoxEnterKeyOption = new System.Windows.Forms.ComboBox();
-            this.label4 = new System.Windows.Forms.Label();
             ((System.ComponentModel.ISupportInitialize)(this.numericUpDownMaxMenuItems)).BeginInit();
             this.groupBox1.SuspendLayout();
             this.groupBox4.SuspendLayout();
@@ -209,6 +209,28 @@ namespace FFXI_ME_v2
             this.groupBox1.TabStop = false;
             this.groupBox1.Text = "Program Specific";
             // 
+            // label4
+            // 
+            this.label4.AutoSize = true;
+            this.label4.Location = new System.Drawing.Point(16, 103);
+            this.label4.Name = "label4";
+            this.label4.Size = new System.Drawing.Size(149, 13);
+            this.label4.TabIndex = 11;
+            this.label4.Text = "Enter keypress when editing : ";
+            // 
+            // comboBoxEnterKeyOption
+            // 
+            this.comboBoxEnterKeyOption.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.comboBoxEnterKeyOption.FormattingEnabled = true;
+            this.comboBoxEnterKeyOption.Items.AddRange(new object[] {
+            "Next Line",
+            "Insert Line",
+            "Safe Insert"});
+            this.comboBoxEnterKeyOption.Location = new System.Drawing.Point(210, 95);
+            this.comboBoxEnterKeyOption.Name = "comboBoxEnterKeyOption";
+            this.comboBoxEnterKeyOption.Size = new System.Drawing.Size(139, 21);
+            this.comboBoxEnterKeyOption.TabIndex = 10;
+            // 
             // checkBoxShowBlankBooks
             // 
             this.checkBoxShowBlankBooks.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
@@ -350,27 +372,6 @@ namespace FFXI_ME_v2
             this.buttonApply.Text = "Apply";
             this.buttonApply.UseVisualStyleBackColor = true;
             this.buttonApply.Click += new System.EventHandler(this.buttonApply_Click);
-            // 
-            // comboBoxEnterKeyOption
-            // 
-            this.comboBoxEnterKeyOption.FormattingEnabled = true;
-            this.comboBoxEnterKeyOption.Items.AddRange(new object[] {
-            "Next Line",
-            "Insert Line",
-            "Safe Insert"});
-            this.comboBoxEnterKeyOption.Location = new System.Drawing.Point(210, 95);
-            this.comboBoxEnterKeyOption.Name = "comboBoxEnterKeyOption";
-            this.comboBoxEnterKeyOption.Size = new System.Drawing.Size(139, 21);
-            this.comboBoxEnterKeyOption.TabIndex = 10;
-            // 
-            // label4
-            // 
-            this.label4.AutoSize = true;
-            this.label4.Location = new System.Drawing.Point(16, 103);
-            this.label4.Name = "label4";
-            this.label4.Size = new System.Drawing.Size(149, 13);
-            this.label4.TabIndex = 11;
-            this.label4.Text = "Enter keypress when editing : ";
             // 
             // OptionsDialog
             // 
