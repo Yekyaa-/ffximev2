@@ -2,9 +2,9 @@
 
  * [Welcome Home]
     * [Test Blah]
-    * Test 2
-    * Test 3
-    * Test 4
-  * Line 2
-  * Line 3
-  * Line 4
+    * [Test 2]
+    * [Test 3]
+    * [Test 4]
+  * [Line 2]
+  * [Line 3]
+  * [Line 4]
