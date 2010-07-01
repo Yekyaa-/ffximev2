@@ -535,9 +535,7 @@
   <ItemGroup>
     <Content Include="FFXI_ME.ico" />
     <Content Include="YekCel.ico" />
-    <Content Include="YekCelShadedVista.ico" />
     <None Include="Resources\signature.png" />
-    <Content Include="YekCelShaded.ico" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

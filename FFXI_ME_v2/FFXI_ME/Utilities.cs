@@ -603,7 +603,26 @@ namespace FFXI_ME_v2
         }
         #endregion
 
-        #region Settings Mehods (GetSetting() overloads)
+        #region Settings Methods (DeleteSetting)
+        /// <summary>
+        /// Used for deleting a node all all children below it.  Do NOT forget to call SaveSettings() after doing this.
+        /// </summary>
+        /// <param name="xPath">The XML path to the node you wish to remove (underneath the 'settings' node).</param>
+        /// <returns>TRUE if Node exists and was deleted; FALSE if not found or the NodeType has no Parent to delete it from.</returns>
+        public bool DeleteSetting(string xPath)
+        {
+            XmlNode xmlNode = xmlDocument.SelectSingleNode("settings/" + xPath);
+            
+            if ((xmlNode != null) && (xmlNode.ParentNode != null))
+            { 
+                xmlNode.ParentNode.RemoveChild(xmlNode);
+                return true;
+            }
+            return false;  // No Setting by that name, or it's NodeType is Attribute, Document, DocumentFragment, Entity, Notation
+        }
+        #endregion
+
+        #region Settings Methods (GetSetting() overloads)
         public bool GetSetting(string xPath, bool defaultValue)
         { return ConvertToBoolean(GetSetting(xPath, Convert.ToString(defaultValue))); }
         public int GetSettingLanguage(string xPath, int defaultValue)
@@ -624,7 +643,7 @@ namespace FFXI_ME_v2
         }
         #endregion
 
-        #region Settings Mehods (PutSetting() overloads)
+        #region Settings Methods (PutSetting() overloads)
         public void PutSetting(string xPath, bool value)
         { PutSetting(xPath, Convert.ToString(value)); }
         public void PutSettingLanguage(string xPath, int value)
@@ -638,14 +657,31 @@ namespace FFXI_ME_v2
             XmlNode xmlNode = xmlDocument.SelectSingleNode("settings/" + xPath);
             if (xmlNode == null) { xmlNode = createMissingNode("settings/" + xPath); }
             xmlNode.InnerText = value;
+        }
+        #endregion
+
+        #region Settings Methods (SaveSettings)
+        /// <summary>
+        /// SaveSettings: Needed an implicit call as too many PutSettings close together gave me user-mapped errors.
+        /// Required if you expect to write the XML successfully.
+        /// </summary>
+        public void SaveSettings()
+        {
             try
             {
                 xmlDocument.Save(documentPath);
             }
             catch (IOException)
             {
-                System.Threading.Thread.Sleep(10);
-                xmlDocument.Save(documentPath);
+                try
+                {
+                    System.Threading.Thread.Sleep(250);
+                    xmlDocument.Save(documentPath);
+                }
+                catch (IOException)
+                {
+                    LogMessage.LogF("Unable to save 'settings.XML' successfully due to some user-mapped error issue.");
+                }
             }
         }
         #endregion

@@ -171,7 +171,7 @@ namespace FFXI_ME_v2
         /// <summary>
         /// Internal folderName for OpenFolderMethod()
         /// </summary>
-        internal string folderName = String.Empty;
+        //internal string folderName = String.Empty;
 
         /// <summary>
         /// Array of buttons for for() loops
@@ -339,7 +339,7 @@ namespace FFXI_ME_v2
             {
                 if (this.FFXIInstallPath != String.Empty)
                 {
-                    this.OpenFolderDialog.SelectedPath = String.Format("{0}{1}", this.FFXIInstallPath, "USER\\");
+                    this.OpenFolderDialog.SelectedPath = String.Format("{0}\\USER\\", this.FFXIInstallPath.Trim('\\'));
                 }
                 else
                 {
@@ -382,12 +382,8 @@ namespace FFXI_ME_v2
             {
                 OpenFolderMethod(Preferences.PathToOpen);
             }
-            else if (this.folderName == String.Empty)
-                OpenFolderMethod();
-            else
-            {
-                OpenFolderMethod(this.folderName);
-            }
+            else OpenFolderMethod();
+
             this.BringToFront();
             //RestoreFFXI_ME();
         }
@@ -1207,6 +1203,7 @@ namespace FFXI_ME_v2
         #region File Menu
         private void openToolStripMenuItem_Click(object sender, EventArgs e)
         {
+            Preferences.PathToOpen.Clear();
             OpenFolderMethod();
         }
         #region File/Backup Submenu Items
@@ -1921,7 +1918,7 @@ namespace FFXI_ME_v2
         private String PickBackupFolder()
         {
             FolderBrowserDialog x = new FolderBrowserDialog();
-            x.SelectedPath = this.folderName;
+            x.SelectedPath = this.FFXIInstallPath;
             DialogResult result = x.ShowDialog();
             if (result == DialogResult.OK)
             {
@@ -1938,21 +1935,48 @@ namespace FFXI_ME_v2
             recurse_form.Name = "Recursing Subdirectories...";
             exitLoop = false;
             if (recurse_form.ShowDialog() == DialogResult.Abort)
+            {
                 exitLoop = true;
+                Thread.Sleep(1);
+            }
         }
         #endregion
 
         #region MainForm Methods (OpenFolderMethod() overloads)
         private void OpenFolderMethod()
         {
-            DialogResult result = OpenFolderDialog.ShowDialog(this);
-            if (result == DialogResult.OK)
+            bool loop = true;
+            DialogResult result;
+            do
             {
-                this.folderName = OpenFolderDialog.SelectedPath;
-                OpenFolderMethod(this.folderName);
-            }
-            else if (MacroFiles == null)
-                FillForm((CMacro)null);
+
+                result = OpenFolderDialog.ShowDialog(this);
+
+                if (result == DialogResult.OK)
+                {
+                    if (!Preferences.PathToOpen.Contains(OpenFolderDialog.SelectedPath))
+                        Preferences.PathToOpen.Add(OpenFolderDialog.SelectedPath);
+                }
+                String Message = String.Format("Would you like to select{0} folders to search for Macro files (Currently {1} selected)?", (Preferences.PathToOpen.Count > 0) ? " more" : "", (Preferences.PathToOpen.Count == 0) ? "none" : Preferences.PathToOpen.Count.ToString());
+                String Caption = String.Format("Search{0} folders...", (Preferences.PathToOpen.Count > 0) ? " more" : "");
+                DialogResult yesnocancel = MessageBox.Show(Message, Caption, MessageBoxButtons.YesNoCancel, MessageBoxIcon.Question, MessageBoxDefaultButton.Button2);
+
+                if (yesnocancel == DialogResult.Cancel)
+                {
+                    if (MacroFiles == null)
+                        FillForm((CMacro)null);
+                    loop = false;
+                }
+                else if (yesnocancel == DialogResult.No)
+                {
+                    if (Preferences.PathToOpen.Count > 0)
+                        OpenFolderMethod(Preferences.PathToOpen);
+                    else if (MacroFiles == null)
+                        FillForm((CMacro)null);
+                    loop = false;
+                }
+
+            } while (loop);
         }
 
         private void OpenFolderMethod(string path)
@@ -1975,19 +1999,18 @@ namespace FFXI_ME_v2
             MacroFiles.Clear();
             BookList.Clear();
             DeleteRenameChanges.Clear();
-            DirectoryInfo temp_di = new DirectoryInfo(Environment.SpecialFolder.MyDocuments.ToString() + "\\" + Preferences.TemplatesFolderName);
+            DirectoryInfo temp_di = new DirectoryInfo(Preferences.TemplatesFolderName);
             bool TemplateFolderOK = true;
             try
             {
                 List<string> tempfileList = null;
                 List<string> mcrfileList = null;
+                myThread.Start();
+                Thread.Sleep(500);
 
                 foreach (string x in paths)
                 {
                     String path = x;
-
-                    myThread.Start();
-                    Thread.Sleep(500);
 
                     if (path == String.Empty)
                         continue;
@@ -2003,7 +2026,8 @@ namespace FFXI_ME_v2
                             mcrfileList = new List<string>();
                             mcrfileList.Clear();
                         }
-                        mcrfileList.AddRange(temp);
+                        if (temp != null)
+                            mcrfileList.AddRange(temp);
                     }
                     else if (fi.Exists && ((fi.Attributes & FileAttributes.Directory) != FileAttributes.Directory))
                     {
@@ -2164,6 +2188,8 @@ namespace FFXI_ME_v2
                         catch
                         {
                             // (System.ObjectDisposedException) && (System.InvalidOperationException)
+                            exitLoop = true;
+                            break;
                         }
 
                         // add the subdirectory to the end of the list so that we can continue to non-recursively get ALL files
@@ -2178,6 +2204,10 @@ namespace FFXI_ME_v2
                                 fileList.Clear();
                             }
                             fileList.Add(dir);
+                        }
+                        if (exitLoop == true)
+                        {
+                            break;
                         }
                     }
 
@@ -2203,6 +2233,10 @@ namespace FFXI_ME_v2
                                 fileList.Clear();
                             }
                             fileList.Add(file);
+                        }
+                        if (exitLoop == true)
+                        {
+                            break;
                         }
                     }
                 }
@@ -2233,38 +2267,209 @@ namespace FFXI_ME_v2
         /// <param name="temppath"></param>
         private void BuildTree(List<string> paths, string temppath)
         {
-            String mainpath = paths[0];
             // Build TreeView here
-            // path will end in a \ if it's a drive
-            // otherwise it's a folder
-            //LogMessage.Log("BuildTree('" + mainpath + "', '" + temppath + "')");
+            String s1 = temppath.TrimEnd('\\');
+            String tempNodeName = String.Empty;
+            TreeNode mainNode = null;
+            List<TreeNode> mainNodes = new List<TreeNode>();
 
-            //GODDAMNIT
-            //    PARSE this SHIT THE Right FUCKING WAY, CHRIS
-            string s = mainpath.TrimEnd('\\'), s1 = temppath.TrimEnd('\\');
-            int pos = s.LastIndexOf('\\'), pos1 = s1.LastIndexOf('\\');
-            string mainNodeName, tempNodeName = String.Empty;
+            int x = 0;
+            bool Enable_Open_Folders = false;
 
             if (treeView.Nodes != null)
                 this.treeView.Nodes.Clear();
 
             this.treeView.BeginUpdate();
 
-            if (mainpath[mainpath.Length - 1] == '\\') // if it ends in '\\' it's a drive
-            {
-                DriveInfo drv = new DriveInfo(s);
-                try
-                {
-                    mainNodeName = drv.VolumeLabel + " (" + s + ")";
-                }
-                catch (IOException e)
-                {
-                    LogMessage.Log("I/O Exception: " + s + " '" + e.Message + "'");
-                    mainNodeName = s;
-                }
-            }
-            else mainNodeName = s.Remove(0, pos + 1); // if it doesn't end in a \\ it's a directory
+            mainNodes.Clear();
 
+            ToolStripItem[] tsmi = new ToolStripItem[paths.Count];
+            #region
+            //Array.Resize(ref tmsi, 6);
+            //tmsi[0] = new ToolStripLabel("Templates Menu");
+            //Font f = new Font(tmsi[0].Font, FontStyle.Bold);
+            //tmsi[0].Font = f;
+
+            //tmsi[1] = new ToolStripSeparator();
+
+            //tmsi[2] = new ToolStripMenuItem("Open " + e.Node.Text + " Folder", Resources.openHS, DynamicMenu_Click);
+            //tmsi[2].Tag = e.Node as Object;
+            //tmsi[2].Name = "Open_Folder";
+            //tmsi[2].Enabled = false;
+
+            //if (!Directory.Exists(TagInfo.GetTagInfo(e.Node.Tag).Text))
+            //{
+            //    tmsi[2].Enabled = false;
+            //    Open_Template_Folder.Enabled = false;
+            //}
+            //else
+            //{
+            //    Open_Template_Folder.Enabled = true;
+            //    tmsi[2].Enabled = true;
+            //}
+
+            //tmsi[3] = new ToolStripSeparator();
+
+            //tmsi[4] = new ToolStripMenuItem("New Folder", Resources.NewFolderHS, DynamicMenu_Click);
+            //tmsi[4].Tag = e.Node as Object;
+            //tmsi[4].Name = "New_Folder";
+            //tmsi[4].Enabled = true;
+
+            //tmsi[5] = new ToolStripMenuItem("New Macro File", Resources.NewMacro, DynamicMenu_Click);
+            //tmsi[5].Tag = e.Node as Object;
+            //tmsi[5].Name = "New_File";
+            //tmsi[5].Enabled = true;
+                //if ((tsmi[0] != null) && (tsmi.Length > 2))
+                //{
+                //    Array.Resize(ref tsmi, tsmi.Length + 3);
+                //    int len = tsmi.Length;
+
+                //    tsmi[len - 3] = new ToolStripSeparator();
+
+                //    tsmi[len - 2] = new ToolStripMenuItem("Save All Macro Sets", Resources.SaveAllHS, saveAllToolStripMenuItem_Click);
+
+                //    tsmi[len - 1] = new ToolStripMenuItem("Reload All Macro Sets", Resources.ReloadAll, ReloadAllToolStripMenuItem_Click);
+                //    if ((Preferences.Include_Header == false) && (tsmi.Length == 5))
+                //    {
+                //        // header
+                //        // separator
+                //        // separator
+                //        // Save All
+                //        // Reload All
+                //        // minimum is header and first separator are hidden
+                //        // so hide my separator here as well
+
+                //        // basically, only hide my separator if it's the first visible item
+                //        tsmi[3].Visible = false;
+                //    }
+                //}
+                //if (Preferences.ShowDebugInfo)
+                //{
+                //    Array.Resize(ref tsmi, tsmi.Length + 2);
+                //    tsmi[tsmi.Length - 2] = new ToolStripSeparator();
+
+                //    tsmi[tsmi.Length - 1] = new ToolStripMenuItem("Show Node Info", Resources.XMLFileHS, DynamicMenu_Click);
+                //    tsmi[tsmi.Length - 1].Tag = e.Node as Object;
+                //    tsmi[tsmi.Length - 1].Name = "Show_Node_Info";
+                //}
+                //if (tsmi[0] != null)
+                //{
+                //    if (Preferences.Include_Header == false)
+                //    {
+                //        // in previous if/else, i devisualized separator index [3]
+                //        // so as to simplify the header dropping based on preferences.
+                //        tsmi[0].Visible = false;
+                //        tsmi[1].Visible = false;
+                //    }
+                //    cms.SuspendLayout();
+                //    cms.Items.AddRange(tsmi);
+                //    cms.ResumeLayout();
+                //    cms.Show(e.Node.TreeView, e.Location);
+                //}
+            #endregion
+
+            foreach (String mainpath in paths)
+            {
+                String s = mainpath.TrimEnd('\\');
+                String mainNodeName = String.Empty;
+
+                mainNode = null;
+
+                if ((mainpath.Length > 0) && (mainpath[mainpath.Length - 1] == '\\')) // if it ends in '\\' it's a drive
+                {
+                    DriveInfo drv = new DriveInfo(s);
+                    try
+                    {
+                        if (drv.VolumeLabel.Trim() == String.Empty)
+                            mainNodeName = "Local Disk (" + s + ")";
+                        else mainNodeName = drv.VolumeLabel + " (" + s + ")";
+                    }
+                    catch (IOException e)
+                    {
+                        LogMessage.Log("I/O Exception: " + s + " '" + e.Message + "'");
+                        mainNodeName = s;
+                    }
+                }
+                else mainNodeName = Path.GetFileName(s); // s.Remove(0, pos + 1); // if it doesn't end in a \\ it's a directory
+
+                #region Setup main nodes
+                if (mainpath == String.Format("{0}\\USER\\{1}", this.FFXIInstallPath.TrimEnd('\\'), mainNodeName))
+                {
+                    #region Apply special names to character folders that are requested to be named
+                    if (characterList != null)
+                    {
+                        for (int folder_x = 0; folder_x < characterList.Length; folder_x++)
+                        {
+                            // if the folder == mainNodeName
+                            // and the Character Name is != mainNodeName (ie someone named the character same as the folder)
+                            if ((characterList[folder_x].Type == mainNodeName) &&
+                                (characterList[folder_x].Text != mainNodeName) &&
+                                (characterList[folder_x].Text.Trim() != String.Empty))
+                            {
+                                mainNode = this.treeView.Nodes.Add(mainNodeName, mainNodeName + " <" + characterList[folder_x].Text + ">", "CharFolderClosed", "CharFolderOpen");
+                                break;
+                            }
+                        }
+                    }
+                    #endregion
+
+                    #region Even if no names are setup, character folders get special icons anyway
+                    if (mainNode == null)
+                        mainNode = this.treeView.Nodes.Add(mainNodeName, mainNodeName, "CharFolderClosed", "CharFolderOpen");
+                    #endregion
+                }
+                else mainNode = this.treeView.Nodes.Add(mainNodeName, mainNodeName, "ClosedFolder", "OpenFolder");
+                TagInfo tI = new TagInfo("main", s);
+                mainNode.Tag = tI;
+                tsmi[x] = new ToolStripMenuItem("Open " + mainNodeName + " Folder", Resources.openHS, DynamicMenu_Click);
+                tsmi[x].Tag = mainNode as Object;
+                tsmi[x].Name = "Open_Folder";
+                if (Directory.Exists(s))
+                {
+                    tsmi[x].Enabled = true;
+                    Enable_Open_Folders = true;
+
+                }
+                else tsmi[x].Enabled = false;
+                x++;
+                mainNodes.Add(mainNode);
+
+            //tmsi[2] = new ToolStripMenuItem("Open " + e.Node.Text + " Folder", Resources.openHS, DynamicMenu_Click);
+            //tmsi[2].Tag = e.Node as Object;
+            //tmsi[2].Name = "Open_Folder";
+            //tmsi[2].Enabled = false;
+
+            //if (!Directory.Exists(TagInfo.GetTagInfo(e.Node.Tag).Text))
+            //{
+            //    tmsi[2].Enabled = false;
+
+                #endregion
+            }
+
+            if (Open_Main_Folder.DropDownItems.Count > 0)
+                Open_Main_Folder.DropDownItems.Clear();
+
+            if (Enable_Open_Folders)
+                Open_Main_Folder.Enabled = true;
+
+            if (tsmi.Length == 1)
+            {
+                Open_Main_Folder.Tag = tsmi[0].Tag;
+                Open_Main_Folder.Text = tsmi[0].Text;
+                Open_Main_Folder.Enabled = tsmi[0].Enabled;
+                Open_Main_Folder.Name = tsmi[0].Name;
+
+            }
+            else
+            {
+                Open_Main_Folder.Text = "Open Folders";
+                Open_Main_Folder.Tag = null;
+                Open_Main_Folder.Name = "Open Folders";
+                Open_Main_Folder.DropDownItems.AddRange(tsmi);
+            }
+
+            #region Build Template Node
+            #region Set Templates Node name
             if (temppath != String.Empty)
             {
 
@@ -2273,7 +2478,9 @@ namespace FFXI_ME_v2
                     DriveInfo drv = new DriveInfo(s1);
                     try
                     {
-                        tempNodeName = drv.VolumeLabel + " (" + s1 + ")";
+                        if (drv.VolumeLabel.Trim() == String.Empty)
+                            tempNodeName = "Local Disk (" + s1 + ")";
+                        else tempNodeName = drv.VolumeLabel + " (" + s1 + ")";
                     }
                     catch (IOException e)
                     {
@@ -2281,40 +2488,15 @@ namespace FFXI_ME_v2
                         tempNodeName = s1;
                     }
                 }
-                else tempNodeName = s1.Remove(0, pos1 + 1); // if it doesn't end in a \\ it's a directory
+                else tempNodeName = Path.GetFileName(s1); // if it doesn't end in a \\ it's a directory
             }
-            TreeNode mainNode = null;
+            #endregion
 
-            if (mainpath == String.Format("{0}USER\\{1}", this.FFXIInstallPath, mainNodeName))
-            {
-                if (characterList != null)
-                {
-                    for (int folder_x = 0; folder_x < characterList.Length; folder_x++)
-                    {
-                        // if the folder == mainNodeName
-                        // and the Character Name is != mainNodeName (ie someone named the character same as the folder)
-                        if ((characterList[folder_x].Type == mainNodeName) &&
-                            (characterList[folder_x].Text != mainNodeName) &&
-                            (characterList[folder_x].Text.Trim() != String.Empty))
-                        {
-                            mainNode = this.treeView.Nodes.Add(mainNodeName, mainNodeName + " <" + characterList[folder_x].Text + ">", "CharFolderClosed", "CharFolderOpen");
-                            break;
-                        }
-                    }
-                }
-
-                if (mainNode == null)
-                    mainNode = this.treeView.Nodes.Add(mainNodeName, mainNodeName, "CharFolderClosed", "CharFolderOpen");
-            }
-            else mainNode = this.treeView.Nodes.Add(mainNodeName, mainNodeName, "ClosedFolder", "OpenFolder");
-
+            #region Setup Template Node with icon and enable/disable "Open Templates Folder"
             TreeNode templateNode = null;
             if (temppath != String.Empty)
                 templateNode = this.treeView.Nodes.Add("Templates <x_ffxi_me_x>", tempNodeName, "ClosedFolder", "OpenFolder");
-            TagInfo tI = new TagInfo("main", s);
-            mainNode.Tag = tI;
 
-            Open_Main_Folder.Text = "Open " + mainNode.Text + " Folder";
             if (templateNode != null)
             {
                 TagInfo tI2 = new TagInfo("template", s1);
@@ -2328,13 +2510,15 @@ namespace FFXI_ME_v2
             {
                 Open_Template_Folder.Enabled = false;
             }
-            // mainpath is C:\\blahblah\\whatever
-            //LogMessage.Log(String.Format("mainNode({0}), s({1})", mainNode.Tag as String, s));
-            // Loop through all files to copy.
+            #endregion
+            #endregion
+
+            #region Loop through all files to copy.
             foreach (CMacroFile cmf in MacroFiles)
             {
-                BuildMacroFileNodes(cmf, mainNode, templateNode);
+                BuildMacroFileNodes(cmf, mainNodes, templateNode);
             }
+            #endregion
 
             if (exitLoop == true)
             {
@@ -2347,7 +2531,7 @@ namespace FFXI_ME_v2
             treeView.EndUpdate();
         }
 
-        private void BuildMacroFileNodes(CMacroFile cmf, TreeNode mainNode, TreeNode templateNode)
+        private void BuildMacroFileNodes(CMacroFile cmf, List<TreeNode> mainNodes, TreeNode templateNode)
         {
             if ((cmf == null) || (cmf.fName == null))
                 return;
@@ -2356,9 +2540,8 @@ namespace FFXI_ME_v2
             // fName is C:\Program Files\blahblah\filename.dat
 
             TreeNode tN = null;
+            bool Found = false;
             string s = String.Empty;
-            TagInfo tI = mainNode.Tag as TagInfo;
-            string mainpath = tI.Text;
             string temppath = String.Empty;
             if (templateNode != null)
             {
@@ -2366,31 +2549,31 @@ namespace FFXI_ME_v2
                 temppath = tItemp.Text;
             }
 
-            int one_use_main_two_use_temp = 0;
-
-            if ((mainpath != String.Empty) && cmf.fName.Contains(mainpath))
+            foreach (TreeNode tmpNode in mainNodes)
             {
-                s = cmf.fName.Remove(0, mainpath.Length); // remove the common start path
-                tN = mainNode;
-                one_use_main_two_use_temp = 1;
+                TagInfo tI = tmpNode.Tag as TagInfo;
+                string mainpath = tI.Text;
+
+                if ((mainpath != String.Empty) && cmf.fName.Contains(mainpath))
+                {
+                    s = cmf.fName.Remove(0, mainpath.Length); // remove the common start path
+                    tN = tmpNode;
+                    if (s.Trim('\\') == String.Empty)
+                        s = mainpath;
+                    Found = true;
+                }
+                if (Found)
+                    break;
             }
-            else if ((temppath != String.Empty) && cmf.fName.Contains(temppath))
+
+            if (!Found && (temppath != String.Empty) && cmf.fName.Contains(temppath))
             {
                 s = cmf.fName.Remove(0, temppath.Length);
                 tN = templateNode;
-                one_use_main_two_use_temp = 2;
-            }
-            //char[] c = { '\\' };
-            //string[] directories = s.Trim('\\').Split(c);
-            //foreach (string phrasetoSearch in directories)
-            //Log("phrasetoSearch in directories: '" + phrasetoSearch + "'");
-            if (s.Trim('\\') == String.Empty)
-            {
-                if (one_use_main_two_use_temp == 2)
+                if (s.Trim('\\') == String.Empty)
                     s = temppath;
-                else if (one_use_main_two_use_temp == 1)
-                    s = mainpath;
             }
+
             if (tN != null)
             {
                 cmf.thisNode = BuildTreeRecursive(tN, s.Trim('\\'), cmf.FileNumber, cmf.fName);
@@ -2709,6 +2892,12 @@ namespace FFXI_ME_v2
             Preferences.Language = settings.GetSettingLanguage("MainProgram/Language", Preferences.Language);
             Preferences.Program_Language = settings.GetSettingLanguage("MainProgram/ProgramLanguage", Preferences.Program_Language);
             Preferences.EnterCreatesNewLine = settings.GetSetting("MainProgram/EnterCreatesNewLine", Preferences.EnterCreatesNewLine);
+
+            if (!settings.DeleteSetting("MainProgram/LastLoaded"))
+            {
+                LogMessage.Log("LastLoaded setting not present or undeleteable");
+            }
+
             if (Preferences.Program_Language == FFXIATPhraseLoader.ffxiLanguages.LANG_JAPANESE)
             {
                 japan.Visible = true;
@@ -2752,36 +2941,53 @@ namespace FFXI_ME_v2
             Preferences.LoadAutoTranslatePhrases = settings.GetSetting("MainProgram/LoadAutoTranslatePhrases", Preferences.LoadAutoTranslatePhrases);
             Preferences.MinimizeToTray = settings.GetSetting("MainProgram/MinimizeToTray", Preferences.MinimizeToTray);
 
-            if (this.folderName.Trim() == String.Empty)
+            #region Load Character Names, if any
+            String[] CharNodes = settings.GetNodeList("CharacterNames");
+            if ((CharNodes != null) && (CharNodes.Length > 0))
             {
-                this.folderName = settings.GetSetting("MainProgram/LastLoaded", this.folderName);
-                LogMessage.Log("..Found last loaded folder. Value is (" + this.folderName + ").");
-            }
-
-            string[] nodelist = settings.GetNodeList("CharacterNames");
-            if ((nodelist != null) && (nodelist.Length > 0))
-            {
-
-                for (int cnt = 0; cnt < nodelist.Length; cnt++)
+                //for (int cnt = 0; cnt < CharNodes.Length; cnt++)
+                foreach (String CharName in CharNodes)
                 {
-                    if (nodelist[cnt].Trim() == String.Empty)
+                    if (CharName.Trim() == String.Empty)
                         continue;
-                    String char_name = settings.GetSetting("CharacterNames/" + nodelist[cnt], "(No Name)");
+
+                    String char_name = settings.GetSetting("CharacterNames/" + CharName, "(No Name)");
+
                     if (char_name.Trim() != String.Empty)
                     {
                         if (characterList == null)
                             characterList = new TagInfo[1];
                         else Array.Resize(ref characterList, characterList.Length + 1);
                         int index = characterList.Length - 1;
-                        characterList[index] = new TagInfo(nodelist[cnt], char_name);
+
+                        characterList[index] = new TagInfo(CharName, char_name);
                         // characterList.Type == folder name
                         // characterList.Text == Character name
                         LogMessage.Log(".. {0} <==> {1}", characterList[index].Type, characterList[index].Text);
                     }
-                    else LogMessage.Log(".. {0} skipped, Name is empty!", nodelist[cnt]);
+                    else LogMessage.Log(".. {0} skipped, Name is empty!", CharName);
                 }
 
             }
+            #endregion
+            #region Load Last Opened Folders, if any
+            String[] FolderNodes = settings.GetNodeList("LastLoadedFolders");
+            if ((FolderNodes != null) && (FolderNodes.Length > 0))
+            {
+                foreach (String Folder in FolderNodes)
+                //int cnt = 0; cnt < FolderNodes.Length; cnt++)
+                {
+                    if (Folder.Trim() == String.Empty)
+                        continue;
+                    String folder_name = settings.GetSetting("LastLoadedFolders/" + Folder, String.Empty);
+                    if (folder_name.Trim() == String.Empty)
+                        continue;
+                    if (!Preferences.PathToOpen.Contains(folder_name))
+                        Preferences.PathToOpen.Add(folder_name);
+                }
+            }
+            #endregion
+
             // To Clear out old Registry Keys for anyone using the older versions of the program.
             string Yekyaa_Key = @"SOFTWARE\Yekyaa";
             try
@@ -2806,6 +3012,9 @@ namespace FFXI_ME_v2
 
         private void SavePreferences()
         {
+            if (!Directory.Exists(Preferences.AppMyDocsFolderName))
+                Directory.CreateDirectory(Preferences.AppMyDocsFolderName);
+
             // only save if not minimized or maximized
             if (this.WindowState == FormWindowState.Normal)
             {
@@ -2830,8 +3039,7 @@ namespace FFXI_ME_v2
             settings.PutSetting("MainProgram/LoadAutoTranslatePhrases", Preferences.LoadAutoTranslatePhrases);
             settings.PutSetting("MainProgram/MinimizeToTray", Preferences.MinimizeToTray);
 
-            if (this.folderName.Trim() != String.Empty)
-                settings.PutSetting("MainProgram/LastLoaded", this.folderName);
+            settings.DeleteSetting("CharacterNames");
 
             if (characterList != null)
             {
@@ -2840,6 +3048,21 @@ namespace FFXI_ME_v2
                     settings.PutSetting("CharacterNames/" + characterList[i].Type, characterList[i].Text.Trim());
                 }
             }
+
+            settings.DeleteSetting("LastLoadedFolders");
+
+            if (Preferences.PathToOpen.Count > 0)
+            {
+                for (int i = 0; i < Preferences.PathToOpen.Count; i++)
+                {
+                    if (Preferences.PathToOpen[i].Trim() == String.Empty)
+                        continue;
+                    String FolderName = String.Format("LastLoadedFolders/Folder{0:X4}", i); 
+                    settings.PutSetting(FolderName, Preferences.PathToOpen[i].Trim());
+                }
+            }
+
+            settings.SaveSettings();
         }
         #endregion
 
@@ -2897,7 +3120,18 @@ namespace FFXI_ME_v2
             if (cmf.FileNumber >= Preferences.Max_Macro_Sets)
                 cmf.FileNumber = -1;
             LogMessage.Log("..Created a new file '" + fi.FullName + "' in memory");
-            BuildMacroFileNodes(cmf, this.treeView.Nodes[0], (this.treeView.Nodes.Count > 1) ? this.treeView.Nodes[1] : null);
+            List<TreeNode> mainNodes = new List<TreeNode>();
+            mainNodes.Clear();
+
+            int index = this.treeView.Nodes.IndexOfKey("Templates <x_ffxi_me_x>");
+
+            for (int nodecnt = 0; nodecnt < this.treeView.Nodes.Count; nodecnt++)
+            {
+                if (nodecnt == index)
+                    continue;
+                mainNodes.Add(this.treeView.Nodes[nodecnt]);
+            }
+            BuildMacroFileNodes(cmf, mainNodes, (index == -1) ? null : this.treeView.Nodes[index]);
             cmf.Changed = true;
             if (cmf.IsDeleted)
                 cmf.Restore();
@@ -3701,7 +3935,7 @@ namespace FFXI_ME_v2
                 this.treeView.SelectedNode = e.Node;
                 Thread.Sleep(10);
                 ContextMenuStrip cms = new ContextMenuStrip();
-                ToolStripItem[] tmsi = new ToolStripItem[1];
+                ToolStripItem[] tsmi = new ToolStripItem[1];
                 CMacro cm = FindMacroByNode(e.Node);
                 CMacroFile cmf = FindMacroFileByNode(e.Node),
                             cmf_e = FindMacroFileExactByNode(e.Node);
@@ -3711,24 +3945,24 @@ namespace FFXI_ME_v2
                 if (tI.Type == "book")
                 {
                     #region Book Right-Clicked
-                    Array.Resize(ref tmsi, 5);
-                    tmsi[0] = new ToolStripLabel("Book Menu");
-                    Font f = new Font(tmsi[0].Font, FontStyle.Bold);
-                    tmsi[0].Font = f;
-                    tmsi[1] = new ToolStripSeparator();
+                    Array.Resize(ref tsmi, 5);
+                    tsmi[0] = new ToolStripLabel("Book Menu");
+                    Font f = new Font(tsmi[0].Font, FontStyle.Bold);
+                    tsmi[0].Font = f;
+                    tsmi[1] = new ToolStripSeparator();
 
-                    tmsi[2] = new ToolStripMenuItem("Rename Book...", Resources.Rename, DynamicMenu_Click);
-                    tmsi[2].Tag = e.Node as Object;
-                    tmsi[2].Name = "Rename_Book";
+                    tsmi[2] = new ToolStripMenuItem("Rename Book...", Resources.Rename, DynamicMenu_Click);
+                    tsmi[2].Tag = e.Node as Object;
+                    tsmi[2].Name = "Rename_Book";
 
-                    tmsi[3] = new ToolStripSeparator();
+                    tsmi[3] = new ToolStripSeparator();
 
-                    tmsi[4] = new ToolStripMenuItem("New File", Resources.NewMacro, DynamicMenu_Click);
-                    tmsi[4].Tag = e.Node as Object;
-                    tmsi[4].Name = "New_File";
+                    tsmi[4] = new ToolStripMenuItem("New File", Resources.NewMacro, DynamicMenu_Click);
+                    tsmi[4].Tag = e.Node as Object;
+                    tsmi[4].Name = "New_File";
                     if (e.Node.Nodes.Count >= 10)
                     {
-                        tmsi[4].Enabled = false;
+                        tsmi[4].Enabled = false;
                     }
                     #endregion
                 }
@@ -3737,12 +3971,12 @@ namespace FFXI_ME_v2
                     #region Macro Right-Clicked
                     // Macro Selected
                     ToolStripItem[] EditMenu = new ToolStripItem[4];
-                    Array.Resize(ref tmsi, 8);
-                    tmsi[0] = new ToolStripLabel("Macro Menu");
-                    Font f = new Font(tmsi[0].Font, FontStyle.Bold);
-                    tmsi[0].Font = f;
+                    Array.Resize(ref tsmi, 8);
+                    tsmi[0] = new ToolStripLabel("Macro Menu");
+                    Font f = new Font(tsmi[0].Font, FontStyle.Bold);
+                    tsmi[0].Font = f;
 
-                    tmsi[1] = new ToolStripSeparator();
+                    tsmi[1] = new ToolStripSeparator();
 
 
                     EditMenu[0] = new ToolStripMenuItem("Cut Macro", cutToolStripMenuItem.Image, cutToolStripMenuItem_Click);
@@ -3756,195 +3990,195 @@ namespace FFXI_ME_v2
                     EditMenu[3].Tag = cm as Object;
 
 
-                    tmsi[2] = new ToolStripMenuItem("&Edit Menu", Resources.NavForward, EditMenu);
+                    tsmi[2] = new ToolStripMenuItem("&Edit Menu", Resources.NavForward, EditMenu);
 
-                    tmsi[3] = new ToolStripSeparator();
+                    tsmi[3] = new ToolStripSeparator();
 
-                    tmsi[4] = new ToolStripMenuItem("Copy Macro '" + cm.thisNode.Text + "' To Templates", Resources.CopyHS, DynamicMenu_Click);
-                    tmsi[4].Tag = cm as Object;
-                    tmsi[4].Enabled = false;
-                    tmsi[4].Name = "Copy_Macro";
-                    tmsi[4].Visible = false;
+                    tsmi[4] = new ToolStripMenuItem("Copy Macro '" + cm.thisNode.Text + "' To Templates", Resources.CopyHS, DynamicMenu_Click);
+                    tsmi[4].Tag = cm as Object;
+                    tsmi[4].Enabled = false;
+                    tsmi[4].Name = "Copy_Macro";
+                    tsmi[4].Visible = false;
 
-                    tmsi[5] = new ToolStripSeparator();
-                    tmsi[5].Visible = false;
+                    tsmi[5] = new ToolStripSeparator();
+                    tsmi[5].Visible = false;
 
-                    tmsi[6] = new ToolStripMenuItem("Save '" + cmf.thisNode.Text.TrimEnd('*') + "'", Resources.saveHS, SaveThistoolStripMenuItem_Click);
-                    tmsi[6].Tag = e.Node as Object;
+                    tsmi[6] = new ToolStripMenuItem("Save '" + cmf.thisNode.Text.TrimEnd('*') + "'", Resources.saveHS, SaveThistoolStripMenuItem_Click);
+                    tsmi[6].Tag = e.Node as Object;
 
-                    tmsi[7] = new ToolStripMenuItem("Reload '" + cmf.thisNode.Text.TrimEnd('*') + "'", Resources.ReloadMacro, ReloadThisToCurrentToolStripMenuItem_Click);
-                    tmsi[7].Tag = e.Node as Object;
+                    tsmi[7] = new ToolStripMenuItem("Reload '" + cmf.thisNode.Text.TrimEnd('*') + "'", Resources.ReloadMacro, ReloadThisToCurrentToolStripMenuItem_Click);
+                    tsmi[7].Tag = e.Node as Object;
                     #endregion
                 }
                 else if (((cm == null) && (cmf != null)) && ((tI.Type == "macrofile") || (tI.Type == "ctrlmacro") || (tI.Type == "altmacro")))
                 {
                     #region MacroFile or Ctrl/Alt Macro Right-Clicked
                     // MacroFile || Ctrl/Alt Macro Node selected
-                    Array.Resize(ref tmsi, 7);
-                    tmsi[0] = new ToolStripLabel("Macro Set Menu");
-                    Font f = new Font(tmsi[0].Font, FontStyle.Bold);
-                    tmsi[0].Font = f;
+                    Array.Resize(ref tsmi, 7);
+                    tsmi[0] = new ToolStripLabel("Macro Set Menu");
+                    Font f = new Font(tsmi[0].Font, FontStyle.Bold);
+                    tsmi[0].Font = f;
 
-                    tmsi[1] = new ToolStripSeparator();
+                    tsmi[1] = new ToolStripSeparator();
 
-                    tmsi[2] = new ToolStripMenuItem("Delete File '" + cmf.thisNode.Text.TrimEnd('*') + "'", Resources.DeleteHS, DynamicMenu_Click);
-                    tmsi[2].Tag = cmf as Object;
-                    tmsi[2].Enabled = true;
-                    tmsi[2].Name = "Delete_File";
-                    tmsi[2].Visible = true;
+                    tsmi[2] = new ToolStripMenuItem("Delete File '" + cmf.thisNode.Text.TrimEnd('*') + "'", Resources.DeleteHS, DynamicMenu_Click);
+                    tsmi[2].Tag = cmf as Object;
+                    tsmi[2].Enabled = true;
+                    tsmi[2].Name = "Delete_File";
+                    tsmi[2].Visible = true;
 
-                    tmsi[3] = new ToolStripMenuItem("Clear File '" + cmf.thisNode.Text.TrimEnd('*') + "'", Resources.NewMacro, DynamicMenu_Click);
-                    tmsi[3].Tag = cmf as Object;
-                    tmsi[3].Name = "Clear_File";
-                    tmsi[3].Visible = true;
+                    tsmi[3] = new ToolStripMenuItem("Clear File '" + cmf.thisNode.Text.TrimEnd('*') + "'", Resources.NewMacro, DynamicMenu_Click);
+                    tsmi[3].Tag = cmf as Object;
+                    tsmi[3].Name = "Clear_File";
+                    tsmi[3].Visible = true;
 
-                    tmsi[4] = new ToolStripSeparator();
-                    tmsi[4].Visible = true;
+                    tsmi[4] = new ToolStripSeparator();
+                    tsmi[4].Visible = true;
 
-                    tmsi[5] = new ToolStripMenuItem("Save '" + cmf.thisNode.Text.TrimEnd('*') + "'", Resources.saveHS, SaveThistoolStripMenuItem_Click);
-                    tmsi[5].Tag = e.Node as Object;
+                    tsmi[5] = new ToolStripMenuItem("Save '" + cmf.thisNode.Text.TrimEnd('*') + "'", Resources.saveHS, SaveThistoolStripMenuItem_Click);
+                    tsmi[5].Tag = e.Node as Object;
 
-                    tmsi[6] = new ToolStripMenuItem("Reload '" + cmf.thisNode.Text.TrimEnd('*') + "'", Resources.ReloadMacro, ReloadThisToCurrentToolStripMenuItem_Click);
-                    tmsi[6].Tag = e.Node as Object;
+                    tsmi[6] = new ToolStripMenuItem("Reload '" + cmf.thisNode.Text.TrimEnd('*') + "'", Resources.ReloadMacro, ReloadThisToCurrentToolStripMenuItem_Click);
+                    tsmi[6].Tag = e.Node as Object;
                     #endregion
                 }
                 else if (((tI.Type == "char") || (tI.Type == "main")) && (e.Node.Level == 0))// && (e.Node == this.treeView.Nodes[0])) //Main Folder
                 {
                     #region Main Folder Right-Clicked
-                    Array.Resize(ref tmsi, 8);
-                    tmsi[0] = new ToolStripLabel("Main Character Folder Menu");
-                    Font f = new Font(tmsi[0].Font, FontStyle.Bold);
-                    tmsi[0].Font = f;
+                    Array.Resize(ref tsmi, 8);
+                    tsmi[0] = new ToolStripLabel("Main Character Folder Menu");
+                    Font f = new Font(tsmi[0].Font, FontStyle.Bold);
+                    tsmi[0].Font = f;
 
-                    tmsi[1] = new ToolStripSeparator();
+                    tsmi[1] = new ToolStripSeparator();
 
-                    tmsi[2] = new ToolStripMenuItem("Character Name...", Resources.Rename, DynamicMenu_Click);
-                    tmsi[2].Tag = e.Node as Object;
-                    tmsi[2].Name = "Rename_Character";
+                    tsmi[2] = new ToolStripMenuItem("Character Name...", Resources.Rename, DynamicMenu_Click);
+                    tsmi[2].Tag = e.Node as Object;
+                    tsmi[2].Name = "Rename_Character";
 
-                    tmsi[3] = new ToolStripSeparator();
+                    tsmi[3] = new ToolStripSeparator();
 
-                    tmsi[4] = new ToolStripMenuItem("Open " + e.Node.Text + " Folder", Resources.openHS, DynamicMenu_Click);
-                    tmsi[4].Tag = e.Node as Object;
-                    tmsi[4].Name = "Open_Folder";
-                    tmsi[4].Enabled = true;
+                    tsmi[4] = new ToolStripMenuItem("Open " + e.Node.Text + " Folder", Resources.openHS, DynamicMenu_Click);
+                    tsmi[4].Tag = e.Node as Object;
+                    tsmi[4].Name = "Open_Folder";
+                    tsmi[4].Enabled = true;
 
-                    tmsi[5] = new ToolStripSeparator();
+                    tsmi[5] = new ToolStripSeparator();
 
-                    tmsi[6] = new ToolStripMenuItem("New Folder", Resources.NewFolderHS, DynamicMenu_Click);
-                    tmsi[6].Tag = e.Node as Object;
-                    tmsi[6].Name = "New_Folder";
+                    tsmi[6] = new ToolStripMenuItem("New Folder", Resources.NewFolderHS, DynamicMenu_Click);
+                    tsmi[6].Tag = e.Node as Object;
+                    tsmi[6].Name = "New_Folder";
 
-                    tmsi[7] = new ToolStripMenuItem("New Macro File", Resources.NewMacro, DynamicMenu_Click);
-                    tmsi[7].Tag = e.Node as Object;
-                    tmsi[7].Name = "New_File";
+                    tsmi[7] = new ToolStripMenuItem("New Macro File", Resources.NewMacro, DynamicMenu_Click);
+                    tsmi[7].Tag = e.Node as Object;
+                    tsmi[7].Name = "New_File";
                     #endregion
                     TagInfo tIe = e.Node.Tag as TagInfo;
                     string folder = tIe.Text;
-                    if (folder != String.Format("{0}USER\\{1}", this.FFXIInstallPath, e.Node.Name))
+                    if (folder != String.Format("{0}\\USER\\{1}", this.FFXIInstallPath.Trim('\\'), e.Node.Name))
                     {
-                        tmsi[0].Text = "Main Folder Menu";
-                        tmsi[2].Visible = false;
-                        tmsi[3].Visible = false; // separator
+                        tsmi[0].Text = "Main Folder Menu";
+                        tsmi[2].Visible = false;
+                        tsmi[3].Visible = false; // separator
                     }
                 }
                 else if ((tI.Type == "template") && (e.Node.Level == 0)) // && (this.treeView.Nodes.Count > 1) && (e.Node == this.treeView.Nodes[1])) // templates
                 {
                     #region Templates Folder Right-Clicked
-                    Array.Resize(ref tmsi, 6);
-                    tmsi[0] = new ToolStripLabel("Templates Menu");
-                    Font f = new Font(tmsi[0].Font, FontStyle.Bold);
-                    tmsi[0].Font = f;
+                    Array.Resize(ref tsmi, 6);
+                    tsmi[0] = new ToolStripLabel("Templates Menu");
+                    Font f = new Font(tsmi[0].Font, FontStyle.Bold);
+                    tsmi[0].Font = f;
 
-                    tmsi[1] = new ToolStripSeparator();
+                    tsmi[1] = new ToolStripSeparator();
 
-                    tmsi[2] = new ToolStripMenuItem("Open " + e.Node.Text + " Folder", Resources.openHS, DynamicMenu_Click);
-                    tmsi[2].Tag = e.Node as Object;
-                    tmsi[2].Name = "Open_Folder";
-                    tmsi[2].Enabled = false;
+                    tsmi[2] = new ToolStripMenuItem("Open " + e.Node.Text + " Folder", Resources.openHS, DynamicMenu_Click);
+                    tsmi[2].Tag = e.Node as Object;
+                    tsmi[2].Name = "Open_Folder";
+                    tsmi[2].Enabled = false;
 
                     if (!Directory.Exists(TagInfo.GetTagInfo(e.Node.Tag).Text))
                     {
-                        tmsi[2].Enabled = false;
+                        tsmi[2].Enabled = false;
                         Open_Template_Folder.Enabled = false;
                     }
                     else
                     {
                         Open_Template_Folder.Enabled = true;
-                        tmsi[2].Enabled = true;
+                        tsmi[2].Enabled = true;
                     }
 
-                    tmsi[3] = new ToolStripSeparator();
+                    tsmi[3] = new ToolStripSeparator();
 
-                    tmsi[4] = new ToolStripMenuItem("New Folder", Resources.NewFolderHS, DynamicMenu_Click);
-                    tmsi[4].Tag = e.Node as Object;
-                    tmsi[4].Name = "New_Folder";
-                    tmsi[4].Enabled = true;
+                    tsmi[4] = new ToolStripMenuItem("New Folder", Resources.NewFolderHS, DynamicMenu_Click);
+                    tsmi[4].Tag = e.Node as Object;
+                    tsmi[4].Name = "New_Folder";
+                    tsmi[4].Enabled = true;
 
-                    tmsi[5] = new ToolStripMenuItem("New Macro File", Resources.NewMacro, DynamicMenu_Click);
-                    tmsi[5].Tag = e.Node as Object;
-                    tmsi[5].Name = "New_File";
-                    tmsi[5].Enabled = true;
+                    tsmi[5] = new ToolStripMenuItem("New Macro File", Resources.NewMacro, DynamicMenu_Click);
+                    tsmi[5].Tag = e.Node as Object;
+                    tsmi[5].Name = "New_File";
+                    tsmi[5].Enabled = true;
                     #endregion
                 }
                 else if ((tI.Type == "char") || (tI.Type == "folder"))
                 {
                     #region Anything In Between Right-Clicked (folders)
-                    Array.Resize(ref tmsi, 8);
-                    tmsi[0] = new ToolStripLabel("Character Folder Menu");
-                    Font f = new Font(tmsi[0].Font, FontStyle.Bold);
-                    tmsi[0].Font = f;
+                    Array.Resize(ref tsmi, 8);
+                    tsmi[0] = new ToolStripLabel("Character Folder Menu");
+                    Font f = new Font(tsmi[0].Font, FontStyle.Bold);
+                    tsmi[0].Font = f;
 
-                    tmsi[1] = new ToolStripSeparator();
+                    tsmi[1] = new ToolStripSeparator();
 
-                    tmsi[2] = new ToolStripMenuItem("Rename Character...", Resources.Rename, DynamicMenu_Click);
-                    tmsi[2].Tag = e.Node as Object;
-                    tmsi[2].Name = "Rename_Character";
+                    tsmi[2] = new ToolStripMenuItem("Rename Character...", Resources.Rename, DynamicMenu_Click);
+                    tsmi[2].Tag = e.Node as Object;
+                    tsmi[2].Name = "Rename_Character";
 
-                    tmsi[3] = new ToolStripMenuItem("Open '" + e.Node.Text + "' Folder", Resources.openHS, DynamicMenu_Click);
-                    tmsi[3].Tag = e.Node as Object;
-                    tmsi[3].Name = "Open_Folder";
-                    tmsi[3].Enabled = true;
+                    tsmi[3] = new ToolStripMenuItem("Open '" + e.Node.Text + "' Folder", Resources.openHS, DynamicMenu_Click);
+                    tsmi[3].Tag = e.Node as Object;
+                    tsmi[3].Name = "Open_Folder";
+                    tsmi[3].Enabled = true;
 
-                    tmsi[4] = new ToolStripSeparator();
+                    tsmi[4] = new ToolStripSeparator();
 
-                    tmsi[5] = new ToolStripMenuItem("New Folder", Resources.NewFolderHS, DynamicMenu_Click);
-                    tmsi[5].Tag = e.Node as Object;
-                    tmsi[5].Name = "New_Folder";
-                    tmsi[5].Enabled = true;
+                    tsmi[5] = new ToolStripMenuItem("New Folder", Resources.NewFolderHS, DynamicMenu_Click);
+                    tsmi[5].Tag = e.Node as Object;
+                    tsmi[5].Name = "New_Folder";
+                    tsmi[5].Enabled = true;
 
-                    tmsi[6] = new ToolStripMenuItem("New Macro File", Resources.NewMacro, DynamicMenu_Click);
-                    tmsi[6].Tag = e.Node as Object;
-                    tmsi[6].Name = "New_File";
-                    tmsi[6].Enabled = true;
+                    tsmi[6] = new ToolStripMenuItem("New Macro File", Resources.NewMacro, DynamicMenu_Click);
+                    tsmi[6].Tag = e.Node as Object;
+                    tsmi[6].Name = "New_File";
+                    tsmi[6].Enabled = true;
 
-                    tmsi[7] = new ToolStripMenuItem("Delete Folder", Resources.DeleteHS, DynamicMenu_Click);
-                    tmsi[7].Tag = e.Node as Object;
-                    tmsi[7].Name = "Delete_Folder";
-                    tmsi[7].Enabled = false;
+                    tsmi[7] = new ToolStripMenuItem("Delete Folder", Resources.DeleteHS, DynamicMenu_Click);
+                    tsmi[7].Tag = e.Node as Object;
+                    tsmi[7].Name = "Delete_Folder";
+                    tsmi[7].Enabled = false;
                     #endregion
                     TagInfo tIe = e.Node.Tag as TagInfo;
                     string folder = tIe.Text;
                     if (tI.Type != "char") //(folder != String.Format("{0}USER\\{1}", this.FFXIInstallPath, e.Node.Name))
                     {
-                        tmsi[0].Text = "Folder Menu";
-                        tmsi[2].Visible = false;
+                        tsmi[0].Text = "Folder Menu";
+                        tsmi[2].Visible = false;
                         //tmsi[4].Visible = false;  // separator
-                        tmsi[7].Enabled = true; // delete folder
+                        tsmi[7].Enabled = true; // delete folder
                     }
                 }
 
-                if ((tmsi[0] != null) && (tmsi.Length > 2))
+                if ((tsmi[0] != null) && (tsmi.Length > 2))
                 {
-                    Array.Resize(ref tmsi, tmsi.Length + 3);
-                    int len = tmsi.Length;
+                    Array.Resize(ref tsmi, tsmi.Length + 3);
+                    int len = tsmi.Length;
 
-                    tmsi[len - 3] = new ToolStripSeparator();
+                    tsmi[len - 3] = new ToolStripSeparator();
 
-                    tmsi[len - 2] = new ToolStripMenuItem("Save All Macro Sets", Resources.SaveAllHS, saveAllToolStripMenuItem_Click);
+                    tsmi[len - 2] = new ToolStripMenuItem("Save All Macro Sets", Resources.SaveAllHS, saveAllToolStripMenuItem_Click);
 
-                    tmsi[len - 1] = new ToolStripMenuItem("Reload All Macro Sets", Resources.ReloadAll, ReloadAllToolStripMenuItem_Click);
-                    if ((Preferences.Include_Header == false) && (tmsi.Length == 5))
+                    tsmi[len - 1] = new ToolStripMenuItem("Reload All Macro Sets", Resources.ReloadAll, ReloadAllToolStripMenuItem_Click);
+                    if ((Preferences.Include_Header == false) && (tsmi.Length == 5))
                     {
                         // header
                         // separator
@@ -3955,29 +4189,29 @@ namespace FFXI_ME_v2
                         // so hide my separator here as well
 
                         // basically, only hide my separator if it's the first visible item
-                        tmsi[3].Visible = false;
+                        tsmi[3].Visible = false;
                     }
                 }
                 if (Preferences.ShowDebugInfo)
                 {
-                    Array.Resize(ref tmsi, tmsi.Length + 2);
-                    tmsi[tmsi.Length - 2] = new ToolStripSeparator();
+                    Array.Resize(ref tsmi, tsmi.Length + 2);
+                    tsmi[tsmi.Length - 2] = new ToolStripSeparator();
 
-                    tmsi[tmsi.Length - 1] = new ToolStripMenuItem("Show Node Info", Resources.XMLFileHS, DynamicMenu_Click);
-                    tmsi[tmsi.Length - 1].Tag = e.Node as Object;
-                    tmsi[tmsi.Length - 1].Name = "Show_Node_Info";
+                    tsmi[tsmi.Length - 1] = new ToolStripMenuItem("Show Node Info", Resources.XMLFileHS, DynamicMenu_Click);
+                    tsmi[tsmi.Length - 1].Tag = e.Node as Object;
+                    tsmi[tsmi.Length - 1].Name = "Show_Node_Info";
                 }
-                if (tmsi[0] != null)
+                if (tsmi[0] != null)
                 {
                     if (Preferences.Include_Header == false)
                     {
                         // in previous if/else, i devisualized separator index [3]
                         // so as to simplify the header dropping based on preferences.
-                        tmsi[0].Visible = false;
-                        tmsi[1].Visible = false;
+                        tsmi[0].Visible = false;
+                        tsmi[1].Visible = false;
                     }
                     cms.SuspendLayout();
-                    cms.Items.AddRange(tmsi);
+                    cms.Items.AddRange(tsmi);
                     cms.ResumeLayout();
                     cms.Show(e.Node.TreeView, e.Location);
                 }
@@ -6696,7 +6930,7 @@ namespace FFXI_ME_v2
         {
             LogMessage.Log("Reload All chosen");
             String tNPath = this.treeView.SelectedNode.Name;
-            OpenFolderMethod(this.folderName);
+            OpenFolderMethod(Preferences.PathToOpen);
 
             if ((treeView.Nodes != null) && (treeView.Nodes.Count > 0))
             {
