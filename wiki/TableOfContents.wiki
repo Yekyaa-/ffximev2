@@ -9,3 +9,6 @@
  * [Test Line1]
  * [Test Line2]
  * [Test Line3]
+
+
+<wiki:gadget url="http://google-code-project-hosting-gadgets.googlecode.com/svn/build/prod/changes/gcChanges.xml" title="FFXI ME! v2 Recent Changes" height="250" width="200" border="1" up_projectName="ffximev2" />
