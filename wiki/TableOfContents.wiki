@@ -1,5 +1,4 @@
 #summary Table Of Contents Sidebar
-<div width="50%">
 === Introduction ===
 * First Line
 * text here
@@ -8,4 +7,5 @@
 
 === Details ===
 [test Blahblah]
-</div>
+
+<wiki:gadget url="http://google-code-project-hosting-gadgets.googlecode.com/svn/build/prod/changes/gcChanges.xml" up_projectName="ffximev2" />
