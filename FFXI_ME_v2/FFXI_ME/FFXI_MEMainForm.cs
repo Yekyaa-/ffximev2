@@ -169,11 +169,6 @@ namespace FFXI_ME_v2
         #endregion
 
         /// <summary>
-        /// Internal folderName for OpenFolderMethod()
-        /// </summary>
-        //internal string folderName = String.Empty;
-
-        /// <summary>
         /// Array of buttons for for() loops
         /// </summary>
         private Button[] buttons = new Button[20];
@@ -2284,90 +2279,7 @@ namespace FFXI_ME_v2
             mainNodes.Clear();
 
             ToolStripItem[] tsmi = new ToolStripItem[paths.Count];
-            #region
-            //Array.Resize(ref tmsi, 6);
-            //tmsi[0] = new ToolStripLabel("Templates Menu");
-            //Font f = new Font(tmsi[0].Font, FontStyle.Bold);
-            //tmsi[0].Font = f;
-
-            //tmsi[1] = new ToolStripSeparator();
-
-            //tmsi[2] = new ToolStripMenuItem("Open " + e.Node.Text + " Folder", Resources.openHS, DynamicMenu_Click);
-            //tmsi[2].Tag = e.Node as Object;
-            //tmsi[2].Name = "Open_Folder";
-            //tmsi[2].Enabled = false;
-
-            //if (!Directory.Exists(TagInfo.GetTagInfo(e.Node.Tag).Text))
-            //{
-            //    tmsi[2].Enabled = false;
-            //    Open_Template_Folder.Enabled = false;
-            //}
-            //else
-            //{
-            //    Open_Template_Folder.Enabled = true;
-            //    tmsi[2].Enabled = true;
-            //}
-
-            //tmsi[3] = new ToolStripSeparator();
-
-            //tmsi[4] = new ToolStripMenuItem("New Folder", Resources.NewFolderHS, DynamicMenu_Click);
-            //tmsi[4].Tag = e.Node as Object;
-            //tmsi[4].Name = "New_Folder";
-            //tmsi[4].Enabled = true;
-
-            //tmsi[5] = new ToolStripMenuItem("New Macro File", Resources.NewMacro, DynamicMenu_Click);
-            //tmsi[5].Tag = e.Node as Object;
-            //tmsi[5].Name = "New_File";
-            //tmsi[5].Enabled = true;
-                //if ((tsmi[0] != null) && (tsmi.Length > 2))
-                //{
-                //    Array.Resize(ref tsmi, tsmi.Length + 3);
-                //    int len = tsmi.Length;
-
-                //    tsmi[len - 3] = new ToolStripSeparator();
-
-                //    tsmi[len - 2] = new ToolStripMenuItem("Save All Macro Sets", Resources.SaveAllHS, saveAllToolStripMenuItem_Click);
-
-                //    tsmi[len - 1] = new ToolStripMenuItem("Reload All Macro Sets", Resources.ReloadAll, ReloadAllToolStripMenuItem_Click);
-                //    if ((Preferences.Include_Header == false) && (tsmi.Length == 5))
-                //    {
-                //        // header
-                //        // separator
-                //        // separator
-                //        // Save All
-                //        // Reload All
-                //        // minimum is header and first separator are hidden
-                //        // so hide my separator here as well
-
-                //        // basically, only hide my separator if it's the first visible item
-                //        tsmi[3].Visible = false;
-                //    }
-                //}
-                //if (Preferences.ShowDebugInfo)
-                //{
-                //    Array.Resize(ref tsmi, tsmi.Length + 2);
-                //    tsmi[tsmi.Length - 2] = new ToolStripSeparator();
-
-                //    tsmi[tsmi.Length - 1] = new ToolStripMenuItem("Show Node Info", Resources.XMLFileHS, DynamicMenu_Click);
-                //    tsmi[tsmi.Length - 1].Tag = e.Node as Object;
-                //    tsmi[tsmi.Length - 1].Name = "Show_Node_Info";
-                //}
-                //if (tsmi[0] != null)
-                //{
-                //    if (Preferences.Include_Header == false)
-                //    {
-                //        // in previous if/else, i devisualized separator index [3]
-                //        // so as to simplify the header dropping based on preferences.
-                //        tsmi[0].Visible = false;
-                //        tsmi[1].Visible = false;
-                //    }
-                //    cms.SuspendLayout();
-                //    cms.Items.AddRange(tsmi);
-                //    cms.ResumeLayout();
-                //    cms.Show(e.Node.TreeView, e.Location);
-                //}
-            #endregion
-
+            
             foreach (String mainpath in paths)
             {
                 String s = mainpath.TrimEnd('\\');
