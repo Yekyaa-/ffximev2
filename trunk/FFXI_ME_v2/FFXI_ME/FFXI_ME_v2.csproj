@@ -1,0 +1,550 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" ToolsVersion="4.0">
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProductVersion>9.0.21022</ProductVersion>
+    <SchemaVersion>2.0</SchemaVersion>
+    <ProjectGuid>{C3451414-6695-454F-A5A6-0ABEA43E41C3}</ProjectGuid>
+    <OutputType>WinExe</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>FFXI_ME_v2</RootNamespace>
+    <AssemblyName>FFXI_ME_v2</AssemblyName>
+    <IsWebBootstrapper>false</IsWebBootstrapper>
+    <ApplicationIcon>FFXI_ME.ico</ApplicationIcon>
+    <SignManifests>true</SignManifests>
+    <SignAssembly>true</SignAssembly>
+    <AssemblyOriginatorKeyFile>yekyaa.pfx.snk</AssemblyOriginatorKeyFile>
+    <FileUpgradeFlags>
+    </FileUpgradeFlags>
+    <UpgradeBackupLocation>
+    </UpgradeBackupLocation>
+    <OldToolsVersion>3.5</OldToolsVersion>
+    <StartupObject>
+    </StartupObject>
+    <TargetFrameworkVersion>v2.0</TargetFrameworkVersion>
+    <PublishUrl>ftp://ftp.darkmystics.com/downloads/</PublishUrl>
+    <Install>true</Install>
+    <InstallFrom>Disk</InstallFrom>
+    <UpdateEnabled>false</UpdateEnabled>
+    <UpdateMode>Foreground</UpdateMode>
+    <UpdateInterval>7</UpdateInterval>
+    <UpdateIntervalUnits>Days</UpdateIntervalUnits>
+    <UpdatePeriodically>false</UpdatePeriodically>
+    <UpdateRequired>false</UpdateRequired>
+    <MapFileExtensions>true</MapFileExtensions>
+    <ProductName>Yekyaa%27s FFXI ME!</ProductName>
+    <PublisherName>Yekyaa</PublisherName>
+    <ApplicationRevision>9999</ApplicationRevision>
+    <ApplicationVersion>2.9999.9999.%2a</ApplicationVersion>
+    <UseApplicationTrust>false</UseApplicationTrust>
+    <BootstrapperEnabled>true</BootstrapperEnabled>
+    <SccProjectName>Svn</SccProjectName>
+    <SccLocalPath>Svn</SccLocalPath>
+    <SccAuxPath>Svn</SccAuxPath>
+    <SccProvider>SubversionScc</SccProvider>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>TRACE;DEBUG</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <AllowUnsafeBlocks>false</AllowUnsafeBlocks>
+    <CodeAnalysisRuleSet>AllRules.ruleset</CodeAnalysisRuleSet>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <CodeAnalysisRuleSet>AllRules.ruleset</CodeAnalysisRuleSet>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|x86' ">
+    <DebugSymbols>true</DebugSymbols>
+    <OutputPath>bin\x86\Debug\</OutputPath>
+    <DefineConstants>TRACE;DEBUG</DefineConstants>
+    <DebugType>full</DebugType>
+    <PlatformTarget>x86</PlatformTarget>
+    <ErrorReport>prompt</ErrorReport>
+    <CodeAnalysisRuleSet>AllRules.ruleset</CodeAnalysisRuleSet>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|x86' ">
+    <OutputPath>bin\x86\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <Optimize>true</Optimize>
+    <DebugType>pdbonly</DebugType>
+    <PlatformTarget>x86</PlatformTarget>
+    <ErrorReport>prompt</ErrorReport>
+    <CodeAnalysisRuleSet>AllRules.ruleset</CodeAnalysisRuleSet>
+  </PropertyGroup>
+  <PropertyGroup />
+  <PropertyGroup>
+    <ApplicationManifest>FFXI_ME.manifest</ApplicationManifest>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="System" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Deployment" />
+    <Reference Include="System.Drawing" />
+    <Reference Include="System.Management" />
+    <Reference Include="System.Security" />
+    <Reference Include="System.Windows.Forms" />
+    <Reference Include="System.Xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="AboutBoxForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="AboutBoxForm.Designer.cs">
+      <DependentUpon>AboutBoxForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="CreditsDialog.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="CreditsDialog.Designer.cs">
+      <DependentUpon>CreditsDialog.cs</DependentUpon>
+    </Compile>
+    <Compile Include="DragHelper.cs" />
+    <Compile Include="DynamicDialog.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="DynamicDialog.Designer.cs">
+      <DependentUpon>DynamicDialog.cs</DependentUpon>
+    </Compile>
+    <Compile Include="ExitAndSaveBox.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="ExitAndSaveBox.Designer.cs">
+      <DependentUpon>ExitAndSaveBox.cs</DependentUpon>
+    </Compile>
+    <Compile Include="FFXI_MEMacroFileMethods.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="FFXI_MEMainForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="FFXI_MEMainForm.Designer.cs">
+      <DependentUpon>FFXI_MEMainForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="OptionsDialog.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="OptionsDialog.Designer.cs">
+      <DependentUpon>OptionsDialog.cs</DependentUpon>
+    </Compile>
+    <Compile Include="FFXI_ME_v2_Program.cs">
+    </Compile>
+    <Compile Include="ProgressNotification.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="ProgressNotification.Designer.cs">
+      <DependentUpon>ProgressNotification.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Utilities.cs" />
+    <EmbeddedResource Include="AboutBoxForm.resx">
+      <SubType>Designer</SubType>
+      <DependentUpon>AboutBoxForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="FFXI_MEMainForm.resx">
+      <SubType>Designer</SubType>
+      <DependentUpon>FFXI_MEMainForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Properties\Resources.resx">
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>Resources.Designer.cs</LastGenOutput>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <Compile Include="Properties\Resources.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DependentUpon>Resources.resx</DependentUpon>
+      <DesignTime>True</DesignTime>
+    </Compile>
+    <Compile Include="RecursingSubDirs.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="RecursingSubDirs.Designer.cs">
+      <DependentUpon>RecursingSubDirs.cs</DependentUpon>
+    </Compile>
+    <Compile Include="SearchForPhrase.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="SearchForPhrase.Designer.cs">
+      <DependentUpon>SearchForPhrase.cs</DependentUpon>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="ClassDiagram.cd" />
+    <None Include="FFXI_ME.manifest" />
+    <None Include="yekyaa.pfx.snk" />
+  </ItemGroup>
+  <ItemGroup>
+    <BootstrapperPackage Include="Microsoft.Net.Client.3.5">
+      <Visible>False</Visible>
+      <ProductName>.NET Framework 3.5 SP1 Client Profile</ProductName>
+      <Install>false</Install>
+    </BootstrapperPackage>
+    <BootstrapperPackage Include="Microsoft.Net.Framework.2.0">
+      <Visible>False</Visible>
+      <ProductName>.NET Framework 2.0 %28x86%29</ProductName>
+      <Install>true</Install>
+    </BootstrapperPackage>
+    <BootstrapperPackage Include="Microsoft.Net.Framework.3.0">
+      <Visible>False</Visible>
+      <ProductName>.NET Framework 3.0 %28x86%29</ProductName>
+      <Install>false</Install>
+    </BootstrapperPackage>
+    <BootstrapperPackage Include="Microsoft.Net.Framework.3.5">
+      <Visible>False</Visible>
+      <ProductName>.NET Framework 3.5</ProductName>
+      <Install>false</Install>
+    </BootstrapperPackage>
+    <BootstrapperPackage Include="Microsoft.Net.Framework.3.5.SP1">
+      <Visible>False</Visible>
+      <ProductName>.NET Framework 3.5 SP1</ProductName>
+      <Install>false</Install>
+    </BootstrapperPackage>
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="CreditsDialog.resx">
+      <DependentUpon>CreditsDialog.cs</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="DynamicDialog.resx">
+      <DependentUpon>DynamicDialog.cs</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="ExitAndSaveBox.resx">
+      <DependentUpon>ExitAndSaveBox.cs</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="OptionsDialog.resx">
+      <SubType>Designer</SubType>
+      <DependentUpon>OptionsDialog.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="ProgressNotification.resx">
+      <DependentUpon>ProgressNotification.cs</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Resources\ffxilg.ico" />
+    <EmbeddedResource Include="RecursingSubDirs.resx">
+      <SubType>Designer</SubType>
+      <DependentUpon>RecursingSubDirs.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="SearchForPhrase.resx">
+      <SubType>Designer</SubType>
+      <DependentUpon>SearchForPhrase.cs</DependentUpon>
+    </EmbeddedResource>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\JapaneseWeapon.gif" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\KeyItemIcon.gif" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\English Icon.gif" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\EnglishItemIcon.gif" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\EnglishKeyItem.gif" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\EnglishPuppetItem.gif" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\EnglishWeapon.gif" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\ItemIcon.gif" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\Japanese Icon.gif" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\JapaneseItemIcon.gif" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\JapaneseKeyItem.gif" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\JapanesePuppetItem.gif" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\WeaponIcon.gif" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\ArmorIcon.gif" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\PuppetIcon.gif" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\JapaneseArmor.gif" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\EnglishArmor.gif" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\Deutsch Icon.gif" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\DeutschArmor.gif" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\DeutschItemIcon.gif" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\DeutschPuppetItem.gif" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\DeutschWeapon.gif" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\French Icon.gif" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\FrenchArmor.gif" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\FrenchItemIcon.gif" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\FrenchPuppetItem.gif" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\FrenchWeapon.gif" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\FrenchKeyItem.gif" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\DeutschKeyItem.gif" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\SplashScreen1.gif" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\SplashScreen2.gif" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\france.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\germany.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\japan.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\usa.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\usa_disabled.gif" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\france.gif" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\france_disabled.gif" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\germany.gif" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\germany_disabled.gif" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\japan.gif" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\japan_disabled.gif" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\usa.gif" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Yekyaa.FFXIEncoding\Yekyaa.FFXIEncoding.csproj">
+      <Project>{7261C13D-DC80-4304-B123-B201661E823B}</Project>
+      <Name>Yekyaa.FFXIEncoding</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\defaultlink.bmp" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\openbook.ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\closedbook.ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\ClosedFolder.ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\VSFolder_open.bmp" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\VSFolder_closed.bmp" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\OpenFolder.gif" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\ClosedFolder.gif" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\Book_openHS.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\HomeHS.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\Help.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\openHS.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\XMLFileHS.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\NavForward.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\SaveAllHS.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\saveHS.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\RefreshDocViewHS.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\OptionsHS.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\PasteHS.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\CutHS.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\CopyHS.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\DeleteHS.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\CopyFolderHS.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\ImportXMLHS.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\SearchMacro.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\ImportMacro.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\Restore.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\GoHomeExit.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\UndoMacro.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\FillRightHS.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\SaveAsXML.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\BackupCurrent.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\BackupAll.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\SwapMacro.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\ReloadAll.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\ReloadMacro.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\Rename.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\NewFolderHS.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\NewMacro.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\DeSelectAll.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\TileWindowsHorizontallyHS.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\BookClosed.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\Users.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\Macrofile.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\Macro.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\Book_angleHS.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\CommentHS.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\CharFolderOpen.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\CharFolderClosed.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\MacroEdit.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\MacroFileEdit.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\HelpDoc.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="FFXI_ME.ico" />
+    <Content Include="YekCel.ico" />
+    <Content Include="YekCelShadedVista.ico" />
+    <None Include="Resources\signature.png" />
+    <Content Include="YekCelShaded.ico" />
+  </ItemGroup>
+  <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
+  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
+       Other similar extension points exist, see Microsoft.Common.targets.
+  <Target Name="BeforeBuild">
+  </Target>
+  <Target Name="AfterBuild">
+  </Target>
+  -->
+</Project>

@@ -1,0 +1,48 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 11.00
+# Visual Studio 2010
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FFXI_ME_v2", "FFXI_ME\FFXI_ME_v2.csproj", "{C3451414-6695-454F-A5A6-0ABEA43E41C3}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Yekyaa.FFXIEncoding", "Yekyaa.FFXIEncoding\Yekyaa.FFXIEncoding.csproj", "{7261C13D-DC80-4304-B123-B201661E823B}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PrintCodes", "Yekyaa.TestApp\PrintCodes.csproj", "{B646DD45-DECC-4B30-912A-D7AF794A52FC}"
+EndProject
+Global
+	GlobalSection(SubversionScc) = preSolution
+		Svn-Managed = True
+		Manager = AnkhSVN - Subversion Support for Visual Studio
+	EndGlobalSection
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Debug|x86 = Debug|x86
+		Release|Any CPU = Release|Any CPU
+		Release|x86 = Release|x86
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{C3451414-6695-454F-A5A6-0ABEA43E41C3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C3451414-6695-454F-A5A6-0ABEA43E41C3}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C3451414-6695-454F-A5A6-0ABEA43E41C3}.Debug|x86.ActiveCfg = Debug|x86
+		{C3451414-6695-454F-A5A6-0ABEA43E41C3}.Debug|x86.Build.0 = Debug|x86
+		{C3451414-6695-454F-A5A6-0ABEA43E41C3}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C3451414-6695-454F-A5A6-0ABEA43E41C3}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C3451414-6695-454F-A5A6-0ABEA43E41C3}.Release|x86.ActiveCfg = Release|x86
+		{C3451414-6695-454F-A5A6-0ABEA43E41C3}.Release|x86.Build.0 = Release|x86
+		{7261C13D-DC80-4304-B123-B201661E823B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7261C13D-DC80-4304-B123-B201661E823B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7261C13D-DC80-4304-B123-B201661E823B}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{7261C13D-DC80-4304-B123-B201661E823B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7261C13D-DC80-4304-B123-B201661E823B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7261C13D-DC80-4304-B123-B201661E823B}.Release|x86.ActiveCfg = Release|x86
+		{7261C13D-DC80-4304-B123-B201661E823B}.Release|x86.Build.0 = Release|x86
+		{B646DD45-DECC-4B30-912A-D7AF794A52FC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B646DD45-DECC-4B30-912A-D7AF794A52FC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B646DD45-DECC-4B30-912A-D7AF794A52FC}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{B646DD45-DECC-4B30-912A-D7AF794A52FC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B646DD45-DECC-4B30-912A-D7AF794A52FC}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B646DD45-DECC-4B30-912A-D7AF794A52FC}.Release|x86.ActiveCfg = Release|x86
+		{B646DD45-DECC-4B30-912A-D7AF794A52FC}.Release|x86.Build.0 = Release|x86
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
