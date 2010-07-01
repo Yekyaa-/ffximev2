@@ -2256,17 +2256,16 @@ namespace FFXI_ME_v2
         }
 
         /// <summary>
-        /// FIX THIS BEFORE YOU FUCKING BREAK IT CHRIS
+        /// Builds the treeview recursively utilizing other Build() functions.
         /// </summary>
-        /// <param name="paths"></param>
-        /// <param name="temppath"></param>
+        /// <param name="paths">List of paths to build as main nodes.</param>
+        /// <param name="temppath">Templates folder path.</param>
         private void BuildTree(List<string> paths, string temppath)
         {
             // Build TreeView here
             String s1 = temppath.TrimEnd('\\');
             String tempNodeName = String.Empty;
             TreeNode mainNode = null;
-            List<TreeNode> mainNodes = new List<TreeNode>();
 
             int x = 0;
             bool Enable_Open_Folders = false;
@@ -2275,8 +2274,6 @@ namespace FFXI_ME_v2
                 this.treeView.Nodes.Clear();
 
             this.treeView.BeginUpdate();
-
-            mainNodes.Clear();
 
             ToolStripItem[] tsmi = new ToolStripItem[paths.Count];
             
@@ -2344,7 +2341,6 @@ namespace FFXI_ME_v2
                 }
                 else tsmi[x].Enabled = false;
                 x++;
-                mainNodes.Add(mainNode);
 
             //tmsi[2] = new ToolStripMenuItem("Open " + e.Node.Text + " Folder", Resources.openHS, DynamicMenu_Click);
             //tmsi[2].Tag = e.Node as Object;
@@ -2428,14 +2424,14 @@ namespace FFXI_ME_v2
             #region Loop through all files to copy.
             foreach (CMacroFile cmf in MacroFiles)
             {
-                BuildMacroFileNodes(cmf, mainNodes, templateNode);
+                BuildMacroFileNodes(cmf, this.treeView.Nodes, templateNode);
             }
             #endregion
 
             if (exitLoop == true)
             {
                 exitLoop = false;
-                treeView.Nodes.Clear();
+                this.treeView.Nodes.Clear();
                 MacroFiles.Clear();
                 FillForm((CMacro)null);
             }
@@ -2443,15 +2439,15 @@ namespace FFXI_ME_v2
             treeView.EndUpdate();
         }
 
-        private void BuildMacroFileNodes(CMacroFile cmf, List<TreeNode> mainNodes, TreeNode templateNode)
+        private void BuildMacroFileNodes(CMacroFile cmf, TreeNodeCollection maintreeviewNodes, TreeNode templateNode)
         {
             if ((cmf == null) || (cmf.fName == null))
                 return;
-
+    
             // mainpath is C:\Program Files\blahblah
             // fName is C:\Program Files\blahblah\filename.dat
 
-            TreeNode tN = null;
+            TreeNode tempTreeNode = null;
             bool Found = false;
             string s = String.Empty;
             string temppath = String.Empty;
@@ -2461,15 +2457,21 @@ namespace FFXI_ME_v2
                 temppath = tItemp.Text;
             }
 
-            foreach (TreeNode tmpNode in mainNodes)
+            foreach (TreeNode mainNode in maintreeviewNodes)
             {
-                TagInfo tI = tmpNode.Tag as TagInfo;
+
+                if (mainNode == templateNode)
+                {
+                    continue;
+                }
+
+                TagInfo tI = mainNode.Tag as TagInfo;
                 string mainpath = tI.Text;
 
                 if ((mainpath != String.Empty) && cmf.fName.Contains(mainpath))
                 {
                     s = cmf.fName.Remove(0, mainpath.Length); // remove the common start path
-                    tN = tmpNode;
+                    tempTreeNode = mainNode;
                     if (s.Trim('\\') == String.Empty)
                         s = mainpath;
                     Found = true;
@@ -2481,14 +2483,14 @@ namespace FFXI_ME_v2
             if (!Found && (temppath != String.Empty) && cmf.fName.Contains(temppath))
             {
                 s = cmf.fName.Remove(0, temppath.Length);
-                tN = templateNode;
+                tempTreeNode = templateNode;
                 if (s.Trim('\\') == String.Empty)
                     s = temppath;
             }
 
-            if (tN != null)
+            if (tempTreeNode != null)
             {
-                cmf.thisNode = BuildTreeRecursive(tN, s.Trim('\\'), cmf.FileNumber, cmf.fName);
+                cmf.thisNode = BuildTreeRecursive(tempTreeNode, s.Trim('\\'), cmf.FileNumber, cmf.fName);
                 TagInfo xTag = new TagInfo("macrofile");
                 cmf.thisNode.Tag = xTag;
                 cmf.ctrlNode = cmf.thisNode.Nodes.Add("Ctrl Macros", "Ctrl Macros", "Bars", "Bars");
@@ -2884,6 +2886,8 @@ namespace FFXI_ME_v2
             #endregion
             #region Load Last Opened Folders, if any
             String[] FolderNodes = settings.GetNodeList("LastLoadedFolders");
+            bool Delete, Skip;
+
             if ((FolderNodes != null) && (FolderNodes.Length > 0))
             {
                 foreach (String Folder in FolderNodes)
@@ -2894,8 +2898,47 @@ namespace FFXI_ME_v2
                     String folder_name = settings.GetSetting("LastLoadedFolders/" + Folder, String.Empty);
                     if (folder_name.Trim() == String.Empty)
                         continue;
-                    if (!Preferences.PathToOpen.Contains(folder_name))
-                        Preferences.PathToOpen.Add(folder_name);
+                    //if (!Preferences.PathToOpen.Contains(folder_name))
+                    //    Preferences.PathToOpen.Add(folder_name);
+                    DirectoryInfo di = new DirectoryInfo(folder_name);
+                    if (Preferences.PathToOpen.Contains(di.FullName)) // if we already have this exact folder, skip it
+                    {
+                        continue;
+                    }
+                    else
+                    {
+                        Delete = false;
+                        Skip = false;
+
+                        for (int c = 0; c < Preferences.PathToOpen.Count; c++)
+                        {
+                            if (Preferences.PathToOpen[c].Contains(di.FullName + "\\"))
+                            {
+                                // if args[i] is a Parent Folder of an existing Path
+                                Preferences.PathToOpen[c] = "<x_ffxime_x> Delete Me";
+                                Delete = true;
+                            }
+                            else if (di.FullName.Contains(Preferences.PathToOpen[c] + "\\"))
+                            {
+                                Skip = true;
+                            }
+                        }
+                        if (Delete)
+                        {
+
+                            Preferences.PathToOpen.RemoveAll(FFXI_ME_v2_Program.Deleteable);
+                            //while (Preferences.PathToOpen.Contains("<x_ffxime_x> Delete Me"))
+                            //{
+                            //    Preferences.PathToOpen.Remove("<x_ffxime_x> Delete Me");
+                            //}
+
+                        }
+
+                        if (Skip)
+                            continue;
+
+                        Preferences.PathToOpen.Add(di.FullName);
+                    }
                 }
             }
             #endregion
@@ -3032,24 +3075,14 @@ namespace FFXI_ME_v2
             if (cmf.FileNumber >= Preferences.Max_Macro_Sets)
                 cmf.FileNumber = -1;
             LogMessage.Log("..Created a new file '" + fi.FullName + "' in memory");
-            List<TreeNode> mainNodes = new List<TreeNode>();
-            mainNodes.Clear();
 
             int index = this.treeView.Nodes.IndexOfKey("Templates <x_ffxi_me_x>");
 
-            for (int nodecnt = 0; nodecnt < this.treeView.Nodes.Count; nodecnt++)
-            {
-                if (nodecnt == index)
-                    continue;
-                mainNodes.Add(this.treeView.Nodes[nodecnt]);
-            }
-            BuildMacroFileNodes(cmf, mainNodes, (index == -1) ? null : this.treeView.Nodes[index]);
+            BuildMacroFileNodes(cmf, this.treeView.Nodes, (index > -1) ? this.treeView.Nodes[index] : null);
             cmf.Changed = true;
             if (cmf.IsDeleted)
                 cmf.Restore();
             return cmf;
-            //LogMessage.Log("....and saved it to disk.");
-            // already exists in Memory.
         }
         #endregion
 
@@ -3156,11 +3189,11 @@ namespace FFXI_ME_v2
 
         #region MainForm Methods (Macro-specific, FillForm(), DisplayName(), etc)
         #region DONE: Macro Specific Utilities
-        /* FindMacroByNode(TreeNode) description:
-         *  parameter(s) mainNode: TreeNode
-         *  returns: CMacro if found, null if not found
-         * *** This is an exact search TreeNode -> CMacro
-         */
+        /// <summary>
+        /// *** This is an exact search TreeNode > CMacro
+        /// </summary>
+        /// <param name="tN">Node to search for.</param>
+        /// <returns>null if not found, CMacro otherwise.</returns>
         private CMacro FindMacroByNode(TreeNode tN)
         {
             // Sanity checks
