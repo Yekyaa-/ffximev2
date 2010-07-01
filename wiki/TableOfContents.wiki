@@ -1,11 +1,3 @@
 #summary Table Of Contents Sidebar
-=== Introduction ===
-* First Line
-* text here
-* * [Welcome Home]
-* * Test 2
-
-=== Details ===
+[Welcome Home]
 [test Blahblah]
-
-<wiki:gadget url="http://google-code-project-hosting-gadgets.googlecode.com/svn/build/prod/changes/gcChanges.xml" up_projectName="ffximev2" />
