@@ -2,7 +2,7 @@
 
 = Original menu.xml =
 * <h4> Last included in 2010.06.26 Revision </h4>
-* <h3>Copy and paste it into a file named menu.xml in your "FFXI ME!" Folder under "My Documents"</h3>
+* <h5>Copy and paste it into a file named menu.xml in your "FFXI ME!" Folder under "My Documents"</h5>
 {{{
 <main value = "Special Character Menu">
     <!--for menu and main tags, valid attributes for modifying menu name are "text" "name" or "value" case-sensitive -->
