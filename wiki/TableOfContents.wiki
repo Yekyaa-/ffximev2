@@ -3,7 +3,7 @@
  * [Welcome Home]
  * [QuickStart Quick Start Guide]
  * *Information*
-    * [Using Using the Macro Editor]
+    * [Using_FFXI_ME Using the Macro Editor]
     * [OriginalMenuXML Original menu.xml]
     * [Test Blah4]
  * [Test Line1]
