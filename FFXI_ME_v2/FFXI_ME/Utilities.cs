@@ -296,14 +296,14 @@ namespace FFXI_ME_v2
 
         #region Preferences Properties
         /// <summary>
-        /// The Color used to show a file has changed in the TreeView
+        /// The Color used to show a file has changed in the TreeView (Read-Only)
         /// </summary>
         static public Color ShowFileChanged
         {
             get { return _changed; }
         }
         /// <summary>
-        /// The default Color used for files in the TreeView
+        /// The default Color used for files in the TreeView (Read-Only)
         /// </summary>
         static public Color FileNotChanged
         {
