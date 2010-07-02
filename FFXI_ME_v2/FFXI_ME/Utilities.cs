@@ -204,6 +204,10 @@ namespace FFXI_ME_v2
         /// </summary>
         static public String AppMyDocsFolderName = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments) + "\\FFXI ME!";
 
+        static public String MenuXMLFile = Preferences.AppMyDocsFolderName + "\\menu.xml";
+
+        static public String SettingsXMLFile = Preferences.AppMyDocsFolderName + "\\settings.xml";
+
         /// <summary>
         /// Default Language for what files will be loaded is set to English. (All, Jp, En, Fr, De are all valid) (User Setting)
         /// </summary>
@@ -548,7 +552,7 @@ namespace FFXI_ME_v2
     {
         #region Settings Variables
         XmlDocument xmlDocument = new XmlDocument();
-        string documentPath = Preferences.AppMyDocsFolderName + "\\settings.xml";
+        string documentPath = Preferences.SettingsXMLFile;
         #endregion
 
         #region Settings Methods

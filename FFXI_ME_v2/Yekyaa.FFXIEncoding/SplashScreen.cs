@@ -54,7 +54,14 @@ namespace Yekyaa.FFXIEncoding
         static public int ComputeStep(int num)
         {
             if (ms_frmSplash != null)
-                return (ms_frmSplash.progressBar.Maximum / num);
+            {
+                int step = ms_frmSplash.progressBar.Maximum / num;
+                if ((step * num) > ms_frmSplash.progressBar.Maximum)
+                    step -= 1;
+                if (step <= 0)
+                    step = 1; // deal with it.
+                return step;
+            }
             return 1;
         }
 
@@ -166,14 +173,19 @@ namespace Yekyaa.FFXIEncoding
                     this.Close();
             }
             label1.Text = m_sStatus;
-            if (m_sProgressCompletion > progressBar.Maximum)
-                progressBar.Value = progressBar.Maximum;
-            else if (m_sProgressCompletion < progressBar.Minimum)
-                progressBar.Value = progressBar.Minimum;
-            else progressBar.Value = m_sProgressCompletion;
+            try
+            {
+                if (m_sProgressCompletion > progressBar.Maximum)
+                    progressBar.Value = progressBar.Maximum;
+                else if (m_sProgressCompletion < progressBar.Minimum)
+                    progressBar.Value = progressBar.Minimum;
+                else progressBar.Value = m_sProgressCompletion;
+            }
+            catch (System.ArgumentException)
+            {
+                progressBar.Value = m_sProgressCompletion;
+            }
             progressBar.Visible = visibility;
-
-            //lblStatus.Text = m_sStatus;
         }
 
         private void SplashScreenEncoding_Click(object sender, System.EventArgs e)

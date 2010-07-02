@@ -431,7 +431,7 @@ namespace Yekyaa.FFXIEncoding
             int step = SplashScreen.ComputeStep(_fileNumberArray.Length);
             foreach (int num in _fileNumberArray)
             {
-                SplashScreen.SetStatus(String.Empty, 1); // 49 * 10 = 490/10000 = 5%
+                SplashScreen.SetStatus(String.Empty, step); // 49 * 10 = 490/10000 = 5%
                 if (_fileNumberArrayList == null)
                     _fileNumberArrayList = new string[1];
                 else Array.Resize(ref _fileNumberArrayList, _fileNumberArrayList.Length + 1);
@@ -601,9 +601,6 @@ namespace Yekyaa.FFXIEncoding
             if ((en_d_msg == null) || (en_d_msg.EntryList == null) || (en_d_msg.Header == null))
                 return;
 
-            int step = SplashScreen.ComputeStep((int)en_d_msg.Header.EntryCount);
-            // Setup Spell Info structure for program
-
             if (SpellInfo == null)
             {
                 SpellInfo = new FFXIATPhrase[en_d_msg.Header.EntryCount];
@@ -612,6 +609,9 @@ namespace Yekyaa.FFXIEncoding
             {
                 Array.Resize(ref SpellInfo, (int)en_d_msg.Header.EntryCount);
             }
+
+            int step = SplashScreen.ComputeStep(SpellInfo.Length > 0 ? SpellInfo.Length : 1);
+            // Setup Spell Info structure for program
 
             // for each entry
             for (int i = 0; i < SpellInfo.Length; i++)
@@ -845,6 +845,8 @@ namespace Yekyaa.FFXIEncoding
             if ((at_phrase_file == null) || (at_phrase_file.AtEntry == null) || (at_phrase_file.AtGroup == null))
                 return;
 
+            int step = SplashScreen.ComputeStep(at_phrase_file.AtGroup.Length + at_phrase_file.AtEntry.Length);
+
             int value = 0;
             string valuetoconvert;
             int cnt = -1;
@@ -857,6 +859,7 @@ namespace Yekyaa.FFXIEncoding
             int g_cnt = 0, e_cnt = 0;
             for (g_cnt = 0; g_cnt < at_phrase_file.AtGroup.Length; g_cnt++)
             {
+                SplashScreen.SetStatus(String.Empty, step);
                 cnt++;
                 if (_ATPhrases[cnt] == null)
                     _ATPhrases[cnt] = new FFXIATPhrase();
@@ -869,6 +872,7 @@ namespace Yekyaa.FFXIEncoding
             }
             for (e_cnt = 0; e_cnt < at_phrase_file.AtEntry.Length; e_cnt++)
             {
+                SplashScreen.SetStatus(String.Empty, step);
                 cnt++;
                 if (_ATPhrases[cnt] == null)
                     _ATPhrases[cnt] = new FFXIATPhrase();
@@ -1551,7 +1555,6 @@ namespace Yekyaa.FFXIEncoding
                         if (this.LoadAutoTranslatePhrases)
                         {
                             SplashScreen.ClearProgress();
-                            SplashScreen.ProgressVisibility = false;
                             SplashScreen.SetStatus("Loading " + Languages[LanguagePreference] + " Auto-Translate Phrases...");
                             LoadAutoTranslateFile();
                             SplashScreen.EndProgress();
