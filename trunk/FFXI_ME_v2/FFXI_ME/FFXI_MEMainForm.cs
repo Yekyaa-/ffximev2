@@ -1097,7 +1097,7 @@ namespace FFXI_ME_v2
 
             //cms.Items.Add(new ToolStripLabel("Undo Test", FFXI_ME_v2.Properties.Resources.UndoMacro));
             #region Add new Special characters here
-            String filename = "menu.xml";
+            String filename = Preferences.MenuXMLFile;
             if (File.Exists(filename))
             {
                 try
@@ -2800,6 +2800,44 @@ namespace FFXI_ME_v2
         #region MainForm Methods (Preferences Loading & Saving)
         private void LoadPreferences()
         {
+            if (!File.Exists(Preferences.SettingsXMLFile))
+            {
+                try
+                {
+                    if (!Directory.Exists(Preferences.AppMyDocsFolderName))
+                        Directory.CreateDirectory(Preferences.AppMyDocsFolderName);
+                    if (File.Exists("settings.xml"))
+                    {
+                        File.Copy("settings.xml", Preferences.SettingsXMLFile);
+                    }
+                }
+                catch
+                {
+                    LogMessage.Log("Error in LoadPreferences():");
+                    LogMessage.Log("..settings.xml didn't exist, failed somewhere to create the path or file or even to restore old settings, ignoring.");
+                }
+            }
+
+            Preferences.MenuXMLFile = settings.GetSetting("MainProgram/MenuXMLFile", Preferences.MenuXMLFile);
+
+            if (!File.Exists(Preferences.MenuXMLFile))
+            {
+                try
+                {
+                    if (!Directory.Exists(Preferences.AppMyDocsFolderName))
+                        Directory.CreateDirectory(Preferences.AppMyDocsFolderName);
+                    if (File.Exists("menu.xml"))
+                    {
+                        File.Copy("menu.xml", Preferences.MenuXMLFile);
+                    }
+                }
+                catch
+                {
+                    LogMessage.Log("Error in LoadPreferences():");
+                    LogMessage.Log("..menu.xml didn't exist, failed somewhere to create the path or file or even to restore old menu, ignoring.");
+                }
+            }
+
             this.Location = new Point(settings.GetSetting("MainProgram/Left", 0), settings.GetSetting("MainProgram/Top", 0));
             this.Size = new Size(settings.GetSetting("MainProgram/Width", 640), settings.GetSetting("MainProgram/Height", 480));
             Preferences.TemplatesFolderName = settings.GetSetting("MainProgram/TemplatesFolderName", Preferences.TemplatesFolderName);
@@ -2978,6 +3016,10 @@ namespace FFXI_ME_v2
                 settings.PutSetting("MainProgram/Width", this.Size.Width);
                 settings.PutSetting("MainProgram/Height", this.Size.Height);
             }
+
+            if (Preferences.MenuXMLFile != String.Empty)
+                settings.PutSetting("MainProgram/MenuXMLFile", Preferences.MenuXMLFile);
+
             settings.PutSetting("MainProgram/TemplatesFolderName", Preferences.TemplatesFolderName);
             settings.PutSetting("MainProgram/IsMaximized", Preferences.IsMaximized);
             settings.PutSetting("MainProgram/EnterCreatesNewLine", Preferences.EnterCreatesNewLine);
