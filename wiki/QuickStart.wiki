@@ -1,0 +1,15 @@
+#summary Quickstart guide for FFXI ME! by Yekyaa
+
+= Introduction =
+
+ # Click on the Downloads page
+ # Locate the latest Revision (commonly tagged as Featured)
+ # Click the download link to the left and save the zip file (or open it, whatever)
+ # Extract the contents to any directory
+   * If you have a previous version of FFXI ME!, you can install it over the old version without issue.
+ # Run the program.
+   * If you're on Windows Vista or Windows 7 with UAC Enabled, you will get a UAC prompt.
+   * The UAC request is required.
+   * I must have permission to write to the "Program Files (x86)" folder for saving.
+ # ???
+ # Profit!
