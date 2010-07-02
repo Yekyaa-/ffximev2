@@ -4238,110 +4238,130 @@ namespace FFXI_ME_v2
             LogMessage.Log("BeforeSelect: Complete");
             SuppressNodeUpdates = false;
         }
-
+        
         /// <summary>Handles dragging of items.</summary>
         /// <param name="sender" type="object">The source of the event.</param>
         /// <param name="e" type="ItemDragEventArgs">Contains the event data.</param>
         /// <returns type="void">Returns nothing.</returns>
         private void treeView_ItemDrag(object sender, ItemDragEventArgs e)
         {
-
-            TreeNode tN = (TreeNode)e.Item;
-
-            LogMessage.Log("DoItemDrag: {0}", (tN == null) ? "<NULL>" : tN.Text);
-            // if it's one of 2 root nodes cancel
-            if ((tN == null) || (tN.Level == 0)) //== this.treeView.Nodes[0].Level) || (tN == this.treeView.Nodes[1]))
+            LogMessage.Log("ItemDrag fired");
+            try
             {
-                // they clicked it, so select it
-                //if (e.Button == MouseButtons.Left)
-                //   this.treeView.SelectedNode = tN;
-                // if they click it, NodeMouseClick will handle it
-                return;
-            }
-            TagInfo tI = tN.Tag as TagInfo;
-            if ((tI != null) && (tI.Type == "book") && (tN.Nodes.Count == 0))
-            {
-                LogMessage.Log("..DoItemDrag: Premature end, attempt to drag (swap/copy) an empty book");
-                return;
-            }
 
-            // Save this info.
-            this.originalNode = this.treeView.SelectedNode;
+                TreeNode tN = (TreeNode)e.Item;
 
-            // Get drag node and select it
-            //this.dragNode = tN;
+                LogMessage.Log("DoItemDrag: {0}", (tN == null) ? "<NULL>" : tN.Text);
+                // if it's one of 2 root nodes cancel
+                if ((tN == null) || (tN.Level == 0)) //== this.treeView.Nodes[0].Level) || (tN == this.treeView.Nodes[1]))
+                {
+                    // they clicked it, so select it
+                    //if (e.Button == MouseButtons.Left)
+                    //   this.treeView.SelectedNode = tN;
+                    // if they click it, NodeMouseClick will handle it
+                    LogMessage.Log("DoItemDrag: Base Node attempted to be dragged");
+                    return;
+                }
+                TagInfo tI = tN.Tag as TagInfo;
+                if ((tI != null) && (tI.Type == "book") && (tN.Nodes.Count == 0))
+                {
+                    LogMessage.Log("..DoItemDrag: Premature end, attempt to drag (swap/copy) an empty book");
+                    return;
+                }
 
-            DragHelper.ImageList_EndDrag();
-            DragHelper.ImageList_DragShowNolock(false);
+                // Save this info.
+                this.originalNode = this.treeView.SelectedNode;
 
-            // Reset image list used for drag image
-            this.imageListForDrag.Images.Clear();
-            this.imageListForDrag.ImageSize = new Size(tN.Bounds.Size.Width + this.treeView.Indent, tN.Bounds.Height);
+                // Get drag node and select it
+                //this.dragNode = tN;
 
-            // Create new bitmap
-            // This bitmap will contain the tree node image to be dragged
-            Bitmap bmp = new Bitmap(tN.Bounds.Width + this.treeView.Indent, tN.Bounds.Height);
-
-            // Get graphics from bitmap
-            Graphics gfx = Graphics.FromImage(bmp);
-
-            // Draw node icon into the bitmap
-            gfx.DrawImage(this.imageListForTreeView.Images[tN.IsSelected ? tN.SelectedImageKey : tN.ImageKey], 0, 0);
-
-            // Draw node label into bitmap
-            gfx.DrawString(tN.Text,
-                this.treeView.Font,
-                new SolidBrush(this.treeView.ForeColor),
-                (float)this.treeView.Indent, 1.0f);
-
-            // Add bitmap to imagelist
-            this.imageListForDrag.Images.Add(bmp);
-
-            // Get mouse position in client coordinates
-            Point p = this.treeView.PointToClient(Control.MousePosition);
-
-            // Compute delta between mouse position and node bounds
-            int dx = p.X + this.treeView.Indent - tN.Bounds.Left;
-            int dy = p.Y - tN.Bounds.Top;
-
-            RawSelect(tN);
-
-            // Begin dragging image
-            if (!DragHelper.ImageList_BeginDrag(this.imageListForDrag.Handle, 0, dx, dy))
-            {
-                DragHelper.ImageList_DragShowNolock(false);
                 DragHelper.ImageList_EndDrag();
-                LogMessage.Log("ItemDrag: Image_ListBeginDrag returned zero! (BAD)");
-            }
-            else
-            {
-                LogMessage.Log("ItemDrag: Image_ListBeginDrag returned true! (GOOD) dx{0} dy{1}", dx, dy);
-            }
+                DragHelper.ImageList_DragShowNolock(false);
 
-            if (!timer.Enabled)
-                timer.Start();
-            this.treeView.DoDragDrop(tN, DragDropEffects.Link | DragDropEffects.Copy | DragDropEffects.Move);
-            // Link = Swap
-            // Copy = Copy
-            // Move is special (Right-Mouse Drag&Drop)
+                // Reset image list used for drag image
+                this.imageListForDrag.Images.Clear();
+                this.imageListForDrag.ImageSize = new Size(tN.Bounds.Size.Width + this.treeView.Indent, tN.Bounds.Height);
+
+                // Create new bitmap
+                // This bitmap will contain the tree node image to be dragged
+                Bitmap bmp = new Bitmap(tN.Bounds.Width + this.treeView.Indent, tN.Bounds.Height);
+
+                // Get graphics from bitmap
+                Graphics gfx = Graphics.FromImage(bmp);
+
+                // Draw node icon into the bitmap
+                gfx.DrawImage(this.imageListForTreeView.Images[tN.IsSelected ? tN.SelectedImageKey : tN.ImageKey], 0, 0);
+
+                // Draw node label into bitmap
+                gfx.DrawString(tN.Text,
+                    this.treeView.Font,
+                    new SolidBrush(this.treeView.ForeColor),
+                    (float)this.treeView.Indent, 1.0f);
+
+                // Add bitmap to imagelist
+                this.imageListForDrag.Images.Add(bmp);
+
+                // Get mouse position in client coordinates
+                Point p = this.treeView.PointToClient(Control.MousePosition);
+
+                // Compute delta between mouse position and node bounds
+                int dx = p.X + this.treeView.Indent - tN.Bounds.Left;
+                int dy = p.Y - tN.Bounds.Top;
+
+                RawSelect(tN);
+
+                // Begin dragging image
+                if (!DragHelper.ImageList_BeginDrag(this.imageListForDrag.Handle, 0, dx, dy))
+                {
+                    DragHelper.ImageList_DragShowNolock(false);
+                    DragHelper.ImageList_EndDrag();
+                    LogMessage.Log("ItemDrag: Image_ListBeginDrag returned zero! (BAD)");
+                }
+                else
+                {
+                    LogMessage.Log("ItemDrag: Image_ListBeginDrag returned true! (GOOD) dx{0} dy{1}", dx, dy);
+                }
+
+                if (!timer.Enabled)
+                    timer.Start();
+
+                this.treeView.DoDragDrop(tN, DragDropEffects.Link | DragDropEffects.Copy | DragDropEffects.Move);
+                // Link = Swap
+                // Copy = Copy
+                // Move is special (Right-Mouse Drag&Drop)
+            }
+            catch (Exception ex)
+            {
+                LogMessage.LogF("ItemDrag event: " + ex.Message);
+            }
         }
 
         private void treeView_GiveFeedback(object sender, System.Windows.Forms.GiveFeedbackEventArgs e)
         {
-            e.UseDefaultCursors = false;
+            LogMessage.Log("GiveFeedback fired");
 
-            if (e.Effect == DragDropEffects.None)
-                this.Cursor = Cursors.No;
-            else if (e.Effect == DragDropEffects.Move)
-                this.Cursor = Cursors.Default;
-            else if (e.Effect == DragDropEffects.Link)
+            try
             {
-                this.Cursor = this.CursorLink;
+                e.UseDefaultCursors = false;
+
+                if (e.Effect == DragDropEffects.None)
+                    this.Cursor = Cursors.No;
+                else if (e.Effect == DragDropEffects.Move)
+                    this.Cursor = Cursors.Default;
+                else if (e.Effect == DragDropEffects.Link)
+                {
+                    this.Cursor = this.CursorLink;
+                }
+                else if (e.Effect == DragDropEffects.Copy)
+                {
+                    this.Cursor = this.CursorCopy;
+                }
             }
-            else if (e.Effect == DragDropEffects.Copy)
+            catch (Exception ex)
             {
-                this.Cursor = this.CursorCopy;
+                LogMessage.LogF("ItemDrag event: " + ex.Message);
             }
+
         }
 
         private void treeView_QueryContinueDrag(object sender, System.Windows.Forms.QueryContinueDragEventArgs e)
@@ -4351,9 +4371,18 @@ namespace FFXI_ME_v2
             // and if DragAction.Cancel is set, then DragLeave is called on the drop
             // DragLeave is also called if it leaves the control
             // so I have to separate the two.
-            if (e.Action == DragAction.Cancel)
+            LogMessage.Log("QueryContinueDrag fired");
+
+            try
             {
-                CancelOnLeave = true;
+                if (e.Action == DragAction.Cancel)
+                {
+                    CancelOnLeave = true;
+                }
+            }
+            catch (Exception ex)
+            {
+                LogMessage.LogF("ItemDrag event: " + ex.Message);
             }
         }
 
@@ -4362,315 +4391,612 @@ namespace FFXI_ME_v2
             // DragOver is called when a Node is pulled from
             // the treeView, but stays within the same control
             // Sender should always be the same TreeView as the dropnode.treeview
+            LogMessage.Log("DragOver fired");
 
-            TreeView tree = sender as TreeView;
-            TreeNode dragNode = e.Data.GetData(typeof(TreeNode)) as TreeNode;
-
-            if ((dragNode != null) && (tree != null))
+            try
             {
-                //LogMessage.Log("DoDragOver START: {0}", dragNode.Text);
+                TreeView tree = sender as TreeView;
+                TreeNode dragNode = e.Data.GetData(typeof(TreeNode)) as TreeNode;
 
-                // Compute drag position and move image
-                Point pt = new Point(e.X, e.Y);
-                Point formP = this.PointToClient(pt);
-
-                DragHelper.ImageList_DragMove(formP.X - tree.Left, formP.Y - tree.Top);
-                //LogMessage.Log("DragOver: DragMove x{0} y{1}", formP.X - tree.Left, formP.Y - tree.Top);
-                // Get actual drop node
-                TreeNode dropNode = tree.GetNodeAt(tree.PointToClient(pt));
-                //LogMessage.Log("..DoDragOver: {0} -> {1}", dragNode.Text, (dropNode == null) ? "Unknown" : dropNode.Text);
-                if (dropNode == null)
-                    e.Effect = DragDropEffects.None;
-                else
+                if ((dragNode != null) && (tree != null))
                 {
-                    // by default, attempt to swap.
-                    CancelOnLeave = false;
-                    e.Effect = DragDropEffects.Link; // Swap by default
-                    if (is_set(e.KeyState, rightmouse))
-                    {
-                        e.Effect = DragDropEffects.Move;
-                        //LogMessage.Log("..DragOver: KeyState rightmouse is set!");
-                        //LogMessage.Log("..DoDragOver: {0} e.Effect: {1}", dragNode.Text, e.Effect);
-                    }
-                    else if (is_set(e.KeyState, ctrl))
-                    {
-                        e.Effect = DragDropEffects.Copy;
-                        //LogMessage.Log("..DragOver: KeyState ctrl_input key is set!");
-                        //LogMessage.Log("..DoDragOver: {0} e.Effect: {1}", dragNode.Text, e.Effect);
-                    }
-                    // if mouse is on a new node "highlight" it
-                    if (tree.SelectedNode != dropNode)
-                    {
-                        //LogMessage.Log("..DoDragOver: SelectedNode != dropNode");
-                        DragHelper.ImageList_DragShowNolock(false);
+                    //LogMessage.Log("DoDragOver START: {0}", dragNode.Text);
 
-                        int delta = tree.Height - formP.Y;
-                        if ((delta < tree.Height / 2) && (delta > 0))
-                        {
-                            //LogMessage.Log("..DoDragOver: EnsuringVisible (Next)");
-                            if (dropNode.NextVisibleNode != null)
-                                dropNode.NextVisibleNode.EnsureVisible();
-                        }
-                        if ((delta > tree.Height / 2) && (delta < tree.Height))
-                        {
-                            //LogMessage.Log("..DoDragOver: EnsuringVisible (Prev)");
-                            if (dropNode.PrevVisibleNode != null)
-                                dropNode.PrevVisibleNode.EnsureVisible();
-                        }
+                    // Compute drag position and move image
+                    Point pt = new Point(e.X, e.Y);
+                    Point formP = this.PointToClient(pt);
 
-                        RawSelect(dropNode);
-                        //LogMessage.Log("..DoDragOver: SetSelectedNode to dropNode");
-                        //LogMessage.Log("..DoDragOver: Removed DragLock");
-                        DragHelper.ImageList_DragShowNolock(true);
-
-                        //this.tempDropNode = dropNode;
-                        //LogMessage.Log("..DoDragOver: tempDrop set to dropNode");
-                    }
-
-                    if (dragNode == dropNode)
-                    {
+                    DragHelper.ImageList_DragMove(formP.X - tree.Left, formP.Y - tree.Top);
+                    //LogMessage.Log("DragOver: DragMove x{0} y{1}", formP.X - tree.Left, formP.Y - tree.Top);
+                    // Get actual drop node
+                    TreeNode dropNode = tree.GetNodeAt(tree.PointToClient(pt));
+                    //LogMessage.Log("..DoDragOver: {0} -> {1}", dragNode.Text, (dropNode == null) ? "Unknown" : dropNode.Text);
+                    if (dropNode == null)
                         e.Effect = DragDropEffects.None;
-                        //LogMessage.Log("..DoDragOver: dragNode == dropNode? {0}", (dragNode == dropNode));
-                    }
-                    // Nowhere in this program can I drop any node
-                    // on its immediate parent and be able to figure
-                    // out WHAT the user wants me to do there.
-                    // So we'll cut it out here.
-                    if (dragNode.Parent == dropNode)
+                    else
                     {
-                        e.Effect = DragDropEffects.None;
-                    }
-
-                    // if not None yet, it's still assumed valid
-                    if ((e.Effect != DragDropEffects.None) && (e.Effect != DragDropEffects.Move))
-                    {
-                        TagInfo tIdrag = dragNode.Tag as TagInfo,
-                            tIdrop = dropNode.Tag as TagInfo;
-                        //LogMessage.Log("..DoDragOver: e.Effect is not None yet : {0}", e.Effect);
-                        // Add Support for different drop targets based on drag targets here.
-                        // Ie, which ones are allowed.  In the DoDragDrop event we've setup
-                        // is where we actually add the support itself.
-                        // IE: How to handle a Macro drop onto a Macrofile.
-
-                        #region Switch (dragType) Sets Default or None if invalid drop location
-                        switch (tIdrag.Type)
+                        // by default, attempt to swap.
+                        CancelOnLeave = false;
+                        e.Effect = DragDropEffects.Link; // Swap by default
+                        if (is_set(e.KeyState, rightmouse))
                         {
-                            case "macro":
-                                if ((tIdrop.Type != "macrofile") &&
-                                    (tIdrop.Type != "ctrlmacro") &&
-                                    (tIdrop.Type != "altmacro") &&
-                                    (tIdrop.Type != "macro"))
-                                    e.Effect = DragDropEffects.None;
-                                break;
-                            case "macrofile": // Nothing else supported at this time but file->file
-                                if ((tIdrop.Type != "template") &&
-                                    (tIdrop.Type != "main") &&
-                                    (tIdrop.Type != "folder") && // macrofile -> folder, Copy, Check Overwrite, Confirm, require Save first
-                                    (tIdrop.Type != "macrofile") && // this replaces the EXACT macro file it's dropped to.
-                                    (tIdrop.Type != "book") && // this should replace the filenumber modified file under the new book
-                                    (tIdrop.Type != "char")) // This should replace the exact filename under different char
-                                    e.Effect = DragDropEffects.None;
-                                else if ((tIdrop.Type == "char") && (dragNode.Parent != null) && (dragNode.Parent.Parent == dropNode)) // same char....
-                                    e.Effect = DragDropEffects.None;
-                                else if (GetDropFileFromInfo(dragNode, dropNode) == null)
-                                    e.Effect = DragDropEffects.Copy;
-                                break;
-                            case "ctrlmacro":
-                            case "altmacro":
-                                if ((tIdrop.Type != "macrofile") &&
-                                    (tIdrop.Type != "ctrlmacro") &&
-                                    (tIdrop.Type != "altmacro"))
-                                    e.Effect = DragDropEffects.None;
-                                break;
-                            case "book":
-                                if ((tIdrop.Type != "char") && // book -> char, if not already owned by char, Copy by confirmed overwrite to new char's folder, same Set/Filenames
-                                    (tIdrop.Type != "folder") &&  // book -> folder Copy all 10 appropriate Macro Sets, warning of overwrite, require Save first if any Changed
-                                    (tIdrop.Type != "book") && // book -> book, Swap, Copy supported, require Saving first. Rename Files, Reload(?).
-                                    (tIdrop.Type != "template") && // book -> temp, Copy all 10 Macro Files to the template folder, save first, check for overwrite
-                                    (tIdrop.Type != "main"))
-                                    e.Effect = DragDropEffects.None;
-                                else if (tIdrop.Type != "book")
-                                {
-                                        e.Effect = DragDropEffects.Copy;
-                                }
-                                else if (tIdrop.Type == "book")
-                                {
-                                    if ((dropNode.FirstNode == null) || (dropNode.Nodes.Count == 0))
-                                        e.Effect = DragDropEffects.Copy; // default action
-                                }
-                                break;
-                            case "char":
-                                if ((tIdrop.Type != "char") && // char to char copy/swap, I want them to require saving first
-                                    (tIdrop.Type != "folder") &&
-                                    (tIdrop.Type != "template") &&
-                                    (tIdrop.Type != "main")) // copy an entire character's macro files to anywhere on folders
-                                    e.Effect = DragDropEffects.None;
-                                else e.Effect = DragDropEffects.Copy;
-                                break;
-                            case "folder":
-                                if ((tIdrop.Type != "main") &&
-                                    (tIdrop.Type != "char") &&
-                                    (tIdrop.Type != "template") &&
-                                    (tIdrop.Type != "folder"))
-                                    e.Effect = DragDropEffects.None;
-                                else e.Effect = DragDropEffects.Copy; // default action
-                                break;
-                            case "main":     // if you even MANAGE to pull this off...
-                            case "template": // or this, you'll be treated to not being able to drop it.
-                            default:
-                                e.Effect = DragDropEffects.None;
-                                break;
+                            e.Effect = DragDropEffects.Move;
+                            //LogMessage.Log("..DragOver: KeyState rightmouse is set!");
+                            //LogMessage.Log("..DoDragOver: {0} e.Effect: {1}", dragNode.Text, e.Effect);
                         }
-                        #endregion
-                        //LogMessage.Log("..DoDragOver: e.Effect is : {0}", e.Effect);
-                    }
-                    else if (e.Effect == DragDropEffects.Move)
-                    {
-                        TagInfo tIdrag = dragNode.Tag as TagInfo,
-                            tIdrop = dropNode.Tag as TagInfo;
-
-                        #region Switch (dragType for Right-Drag Only) Sets None if invalid drop location
-                        switch (tIdrag.Type)
+                        else if (is_set(e.KeyState, ctrl))
                         {
-                            case "macro":
-                                if ((tIdrop.Type != "macrofile") &&
-                                    (tIdrop.Type != "ctrlmacro") &&
-                                    (tIdrop.Type != "altmacro") &&
-                                    (tIdrop.Type != "macro"))
-                                    e.Effect = DragDropEffects.None;
-                                break;
-                            case "macrofile": // Nothing else supported at this time but file->file
-                                if ((tIdrop.Type != "template") &&
+                            e.Effect = DragDropEffects.Copy;
+                            //LogMessage.Log("..DragOver: KeyState ctrl_input key is set!");
+                            //LogMessage.Log("..DoDragOver: {0} e.Effect: {1}", dragNode.Text, e.Effect);
+                        }
+                        // if mouse is on a new node "highlight" it
+                        if (tree.SelectedNode != dropNode)
+                        {
+                            //LogMessage.Log("..DoDragOver: SelectedNode != dropNode");
+                            DragHelper.ImageList_DragShowNolock(false);
+
+                            int delta = tree.Height - formP.Y;
+                            if ((delta < tree.Height / 2) && (delta > 0))
+                            {
+                                //LogMessage.Log("..DoDragOver: EnsuringVisible (Next)");
+                                if (dropNode.NextVisibleNode != null)
+                                    dropNode.NextVisibleNode.EnsureVisible();
+                            }
+                            if ((delta > tree.Height / 2) && (delta < tree.Height))
+                            {
+                                //LogMessage.Log("..DoDragOver: EnsuringVisible (Prev)");
+                                if (dropNode.PrevVisibleNode != null)
+                                    dropNode.PrevVisibleNode.EnsureVisible();
+                            }
+
+                            RawSelect(dropNode);
+                            //LogMessage.Log("..DoDragOver: SetSelectedNode to dropNode");
+                            //LogMessage.Log("..DoDragOver: Removed DragLock");
+                            DragHelper.ImageList_DragShowNolock(true);
+
+                            //this.tempDropNode = dropNode;
+                            //LogMessage.Log("..DoDragOver: tempDrop set to dropNode");
+                        }
+
+                        if (dragNode == dropNode)
+                        {
+                            e.Effect = DragDropEffects.None;
+                            //LogMessage.Log("..DoDragOver: dragNode == dropNode? {0}", (dragNode == dropNode));
+                        }
+                        // Nowhere in this program can I drop any node
+                        // on its immediate parent and be able to figure
+                        // out WHAT the user wants me to do there.
+                        // So we'll cut it out here.
+                        if (dragNode.Parent == dropNode)
+                        {
+                            e.Effect = DragDropEffects.None;
+                        }
+
+                        // if not None yet, it's still assumed valid
+                        if ((e.Effect != DragDropEffects.None) && (e.Effect != DragDropEffects.Move))
+                        {
+                            TagInfo tIdrag = dragNode.Tag as TagInfo,
+                                tIdrop = dropNode.Tag as TagInfo;
+                            //LogMessage.Log("..DoDragOver: e.Effect is not None yet : {0}", e.Effect);
+                            // Add Support for different drop targets based on drag targets here.
+                            // Ie, which ones are allowed.  In the DoDragDrop event we've setup
+                            // is where we actually add the support itself.
+                            // IE: How to handle a Macro drop onto a Macrofile.
+
+                            #region Switch (dragType) Sets Default or None if invalid drop location
+                            switch (tIdrag.Type)
+                            {
+                                case "macro":
+                                    if ((tIdrop.Type != "macrofile") &&
+                                        (tIdrop.Type != "ctrlmacro") &&
+                                        (tIdrop.Type != "altmacro") &&
+                                        (tIdrop.Type != "macro"))
+                                        e.Effect = DragDropEffects.None;
+                                    break;
+                                case "macrofile": // Nothing else supported at this time but file->file
+                                    if ((tIdrop.Type != "template") &&
                                         (tIdrop.Type != "main") &&
                                         (tIdrop.Type != "folder") && // macrofile -> folder, Copy, Check Overwrite, Confirm, require Save first
                                         (tIdrop.Type != "macrofile") && // this replaces the EXACT macro file it's dropped to.
                                         (tIdrop.Type != "book") && // this should replace the filenumber modified file under the new book
                                         (tIdrop.Type != "char")) // This should replace the exact filename under different char
+                                        e.Effect = DragDropEffects.None;
+                                    else if ((tIdrop.Type == "char") && (dragNode.Parent != null) && (dragNode.Parent.Parent == dropNode)) // same char....
+                                        e.Effect = DragDropEffects.None;
+                                    else if (GetDropFileFromInfo(dragNode, dropNode) == null)
+                                        e.Effect = DragDropEffects.Copy;
+                                    break;
+                                case "ctrlmacro":
+                                case "altmacro":
+                                    if ((tIdrop.Type != "macrofile") &&
+                                        (tIdrop.Type != "ctrlmacro") &&
+                                        (tIdrop.Type != "altmacro"))
+                                        e.Effect = DragDropEffects.None;
+                                    break;
+                                case "book":
+                                    if ((tIdrop.Type != "char") && // book -> char, if not already owned by char, Copy by confirmed overwrite to new char's folder, same Set/Filenames
+                                        (tIdrop.Type != "folder") &&  // book -> folder Copy all 10 appropriate Macro Sets, warning of overwrite, require Save first if any Changed
+                                        (tIdrop.Type != "book") && // book -> book, Swap, Copy supported, require Saving first. Rename Files, Reload(?).
+                                        (tIdrop.Type != "template") && // book -> temp, Copy all 10 Macro Files to the template folder, save first, check for overwrite
+                                        (tIdrop.Type != "main"))
+                                        e.Effect = DragDropEffects.None;
+                                    else if (tIdrop.Type != "book")
+                                    {
+                                        e.Effect = DragDropEffects.Copy;
+                                    }
+                                    else if (tIdrop.Type == "book")
+                                    {
+                                        if ((dropNode.FirstNode == null) || (dropNode.Nodes.Count == 0))
+                                            e.Effect = DragDropEffects.Copy; // default action
+                                    }
+                                    break;
+                                case "char":
+                                    if ((tIdrop.Type != "char") && // char to char copy/swap, I want them to require saving first
+                                        (tIdrop.Type != "folder") &&
+                                        (tIdrop.Type != "template") &&
+                                        (tIdrop.Type != "main")) // copy an entire character's macro files to anywhere on folders
+                                        e.Effect = DragDropEffects.None;
+                                    else e.Effect = DragDropEffects.Copy;
+                                    break;
+                                case "folder":
+                                    if ((tIdrop.Type != "main") &&
+                                        (tIdrop.Type != "char") &&
+                                        (tIdrop.Type != "template") &&
+                                        (tIdrop.Type != "folder"))
+                                        e.Effect = DragDropEffects.None;
+                                    else e.Effect = DragDropEffects.Copy; // default action
+                                    break;
+                                case "main":     // if you even MANAGE to pull this off...
+                                case "template": // or this, you'll be treated to not being able to drop it.
+                                default:
                                     e.Effect = DragDropEffects.None;
-                                else if ((tIdrop.Type == "char") && (dragNode.Parent != null) && (dragNode.Parent.Parent == dropNode)) // same char....
-                                    e.Effect = DragDropEffects.None;
-                                break;
-                            case "ctrlmacro":
-                            case "altmacro":
-                                if ((tIdrop.Type != "macrofile") &&
-                                    (tIdrop.Type != "ctrlmacro") &&
-                                    (tIdrop.Type != "altmacro"))
-                                    e.Effect = DragDropEffects.None;
-                                break;
-                            case "book":
-                                if ((tIdrop.Type != "char") && // book -> char, if not already owned by char, Copy by confirmed overwrite to new char's folder, same Set/Filenames
-                                    (tIdrop.Type != "folder") &&  // book -> folder Copy all 10 appropriate Macro Sets, warning of overwrite, require Save first if any Changed
-                                    (tIdrop.Type != "book") && // book -> book, Swap, Copy supported, require Saving first. Rename Files, Reload(?).
-                                    (tIdrop.Type != "template") && // book -> temp, Copy all 10 Macro Files to the template folder, save first, check for overwrite
-                                    (tIdrop.Type != "main"))
-                                    e.Effect = DragDropEffects.None;
-                                break;
-                            case "char":
-                                if ((tIdrop.Type != "char") && // char to char copy/swap, I want them to require saving first
-                                    (tIdrop.Type != "folder") &&
-                                    (tIdrop.Type != "template") &&
-                                    (tIdrop.Type != "main")) // copy an entire character's macro files to anywhere on folders
-                                    e.Effect = DragDropEffects.None;
-                                break;
-                            case "folder":
-                                if ((tIdrop.Type != "main") &&
-                                    (tIdrop.Type != "char") &&
-                                    (tIdrop.Type != "template") &&
-                                    (tIdrop.Type != "folder"))
-                                    e.Effect = DragDropEffects.None;
-                                break;
-                            case "main":     // if you even MANAGE to pull this off...
-                            case "template": // or this, you'll be treated to not being able to drop it.
-                            default:
-                                e.Effect = DragDropEffects.None;
-                                break;
-                        }
-                        #endregion
-                    }
-
-                    if (e.Effect != DragDropEffects.None)
-                    {
-                        //LogMessage.Log("..DoDragOver: e.Effect != None still: {0}", e.Effect);
-                        // Avoid that drop node is child of drag node 
-                        TreeNode tmpNode = dropNode;
-                        while (tmpNode.Parent != null)
-                        {
-                            if (tmpNode.Parent == dragNode)
-                            {
-                                e.Effect = DragDropEffects.None;
-                                CancelOnLeave = true;
-                                //LogMessage.Log("..DoDragOver: tempNode.Parent == dragNode e.Effect: {0}", e.Effect);
-                                break;
+                                    break;
                             }
-                            tmpNode = tmpNode.Parent;
+                            #endregion
+                            //LogMessage.Log("..DoDragOver: e.Effect is : {0}", e.Effect);
+                        }
+                        else if (e.Effect == DragDropEffects.Move)
+                        {
+                            TagInfo tIdrag = dragNode.Tag as TagInfo,
+                                tIdrop = dropNode.Tag as TagInfo;
+
+                            #region Switch (dragType for Right-Drag Only) Sets None if invalid drop location
+                            switch (tIdrag.Type)
+                            {
+                                case "macro":
+                                    if ((tIdrop.Type != "macrofile") &&
+                                        (tIdrop.Type != "ctrlmacro") &&
+                                        (tIdrop.Type != "altmacro") &&
+                                        (tIdrop.Type != "macro"))
+                                        e.Effect = DragDropEffects.None;
+                                    break;
+                                case "macrofile": // Nothing else supported at this time but file->file
+                                    if ((tIdrop.Type != "template") &&
+                                            (tIdrop.Type != "main") &&
+                                            (tIdrop.Type != "folder") && // macrofile -> folder, Copy, Check Overwrite, Confirm, require Save first
+                                            (tIdrop.Type != "macrofile") && // this replaces the EXACT macro file it's dropped to.
+                                            (tIdrop.Type != "book") && // this should replace the filenumber modified file under the new book
+                                            (tIdrop.Type != "char")) // This should replace the exact filename under different char
+                                        e.Effect = DragDropEffects.None;
+                                    else if ((tIdrop.Type == "char") && (dragNode.Parent != null) && (dragNode.Parent.Parent == dropNode)) // same char....
+                                        e.Effect = DragDropEffects.None;
+                                    break;
+                                case "ctrlmacro":
+                                case "altmacro":
+                                    if ((tIdrop.Type != "macrofile") &&
+                                        (tIdrop.Type != "ctrlmacro") &&
+                                        (tIdrop.Type != "altmacro"))
+                                        e.Effect = DragDropEffects.None;
+                                    break;
+                                case "book":
+                                    if ((tIdrop.Type != "char") && // book -> char, if not already owned by char, Copy by confirmed overwrite to new char's folder, same Set/Filenames
+                                        (tIdrop.Type != "folder") &&  // book -> folder Copy all 10 appropriate Macro Sets, warning of overwrite, require Save first if any Changed
+                                        (tIdrop.Type != "book") && // book -> book, Swap, Copy supported, require Saving first. Rename Files, Reload(?).
+                                        (tIdrop.Type != "template") && // book -> temp, Copy all 10 Macro Files to the template folder, save first, check for overwrite
+                                        (tIdrop.Type != "main"))
+                                        e.Effect = DragDropEffects.None;
+                                    break;
+                                case "char":
+                                    if ((tIdrop.Type != "char") && // char to char copy/swap, I want them to require saving first
+                                        (tIdrop.Type != "folder") &&
+                                        (tIdrop.Type != "template") &&
+                                        (tIdrop.Type != "main")) // copy an entire character's macro files to anywhere on folders
+                                        e.Effect = DragDropEffects.None;
+                                    break;
+                                case "folder":
+                                    if ((tIdrop.Type != "main") &&
+                                        (tIdrop.Type != "char") &&
+                                        (tIdrop.Type != "template") &&
+                                        (tIdrop.Type != "folder"))
+                                        e.Effect = DragDropEffects.None;
+                                    break;
+                                case "main":     // if you even MANAGE to pull this off...
+                                case "template": // or this, you'll be treated to not being able to drop it.
+                                default:
+                                    e.Effect = DragDropEffects.None;
+                                    break;
+                            }
+                            #endregion
+                        }
+
+                        if (e.Effect != DragDropEffects.None)
+                        {
+                            //LogMessage.Log("..DoDragOver: e.Effect != None still: {0}", e.Effect);
+                            // Avoid that drop node is child of drag node 
+                            TreeNode tmpNode = dropNode;
+                            while (tmpNode.Parent != null)
+                            {
+                                if (tmpNode.Parent == dragNode)
+                                {
+                                    e.Effect = DragDropEffects.None;
+                                    CancelOnLeave = true;
+                                    //LogMessage.Log("..DoDragOver: tempNode.Parent == dragNode e.Effect: {0}", e.Effect);
+                                    break;
+                                }
+                                tmpNode = tmpNode.Parent;
+                            }
                         }
                     }
+                    if (e.Effect == DragDropEffects.None)
+                    {
+                        // do same effect as if they had pressed escape to cancel the drag
+                        // by clearing the info.
+                        // because DragLeave is called instead of DragDrop if effect is "None"
+                        CancelOnLeave = true;
+                        //LogMessage.Log("..DoDragOver: Setting CancelOnLeave truee, e.Effect: {0}", e.Effect);
+                    }
+                    //LogMessage.Log("DoDragOver END: {0} e.Effect: {1}", dragNode.Text, e.Effect);
                 }
-                if (e.Effect == DragDropEffects.None)
-                {
-                    // do same effect as if they had pressed escape to cancel the drag
-                    // by clearing the info.
-                    // because DragLeave is called instead of DragDrop if effect is "None"
-                    CancelOnLeave = true;
-                    //LogMessage.Log("..DoDragOver: Setting CancelOnLeave truee, e.Effect: {0}", e.Effect);
-                }
-                //LogMessage.Log("DoDragOver END: {0} e.Effect: {1}", dragNode.Text, e.Effect);
+                //else LogMessage.Log("DragOver: dragNode is null! (BAD)");
             }
-            //else LogMessage.Log("DragOver: dragNode is null! (BAD)");
+            catch (Exception ex)
+            {
+                LogMessage.LogF("ItemDrag event: " + ex.Message);
+            }
         }
 
         private void treeView_DragEnter(object sender, System.Windows.Forms.DragEventArgs e)
         {
-            TreeNode dragNode = null;
-            TreeView tree = sender as TreeView;
+            LogMessage.Log("DragEnter fired");
 
-            if (!timer.Enabled)
-                timer.Start();
-
-            if (!e.Data.GetDataPresent(typeof(TreeNode)))
+            try
             {
-                LogMessage.Log(" DragEnter: GetDataPresent(TreeNode) = false, Drag the right stuff");
-                e.Effect = DragDropEffects.None;
+                TreeNode dragNode = null;
+                TreeView tree = null;
+                if ((sender != null) && (sender is TreeView))
+                    tree = sender as TreeView;
+
+                bool Ignore = false;
+
+                if (!timer.Enabled)
+                    timer.Start();
+
+                if (!e.Data.GetDataPresent(typeof(TreeNode)))
+                {
+                    LogMessage.Log(" DragEnter: GetDataPresent(TreeNode) = false, Drag the right stuff");
+                    //e.Effect = DragDropEffects.None;
+                    e.Effect = DragDropEffects.Copy;
+                    Ignore = true;
+                }
+                else
+                {
+                    LogMessage.Log("DragEnter: GetDataPresent(TreeNode) = true (good)");
+                    dragNode = (TreeNode)e.Data.GetData(typeof(TreeNode));
+                    TreeNode drag2 = (TreeNode)e.Data.GetData("System.Windows.Forms.TreeNode", false);
+                    if (dragNode == null)
+                        LogMessage.Log("DragEnter: dragNode is null");
+                    else LogMessage.Log("DragEnter: dragNode is NOT null, (good) Name: {0}", dragNode.Text);
+                    if (drag2 == null)
+                        LogMessage.Log("DragEnter: drag2 is null");
+                    else LogMessage.Log("DragEnter: drag2 is NOT null, (good) Name: '{0}'", drag2.Text);
+                }
+
+                if (!Ignore)
+                    DragHelper.ImageList_DragEnter(tree.Handle, e.X - tree.Left, e.Y - tree.Top);
             }
-            else
+            catch (Exception ex)
             {
-                LogMessage.Log("DragEnter: GetDataPresent(TreeNode) = true (good)");
-                dragNode = (TreeNode)e.Data.GetData(typeof(TreeNode));
-                TreeNode drag2 = (TreeNode)e.Data.GetData("System.Windows.Forms.TreeNode", false);
-                if (dragNode == null)
-                    LogMessage.Log("DragEnter: dragNode is null");
-                else LogMessage.Log("DragEnter: dragNode is NOT null, (good) Name: {0}", dragNode.Text);
-                if (drag2 == null)
-                    LogMessage.Log("DragEnter: drag2 is null");
-                else LogMessage.Log("DragEnter: drag2 is NOT null, (good) Name: '{0}'", drag2.Text);
+                LogMessage.LogF("ItemDrag event: " + ex.Message);
             }
 
-            DragHelper.ImageList_DragEnter(tree.Handle, e.X - tree.Left, e.Y - tree.Top);
         }
 
         private void treeView_DragLeave(object sender, System.EventArgs e)
         {
-            TreeView tree = sender as TreeView;
+            LogMessage.Log("DragLeave fired");
 
-            //LogMessage.Log("DoDragLeave: {0} : CancelOnLeave {1}", this.dragNode.Text, CancelOnLeave);
-            this.Cursor = Cursors.Default;
-
-            if (tree != null)
+            try
             {
-                if (CancelOnLeave == true)
+                TreeView tree = sender as TreeView;
+
+                //LogMessage.Log("DoDragLeave: {0} : CancelOnLeave {1}", this.dragNode.Text, CancelOnLeave);
+                this.Cursor = Cursors.Default;
+
+                if (tree != null)
                 {
-                    this.interval = 0;
-                    timer.Stop();
-                    CancelOnLeave = false;
-                    //DragHelper.ImageList_DragShowNolock(false);
-                    DragHelper.ImageList_EndDrag();
-                    // go back to previous node if cancelled.
-                    RawSelect(this.originalNode);
-                    this.treeView.Invalidate();
+                    if (CancelOnLeave == true)
+                    {
+                        this.interval = 0;
+                        timer.Stop();
+                        CancelOnLeave = false;
+                        //DragHelper.ImageList_DragShowNolock(false);
+                        DragHelper.ImageList_EndDrag();
+                        // go back to previous node if cancelled.
+                        RawSelect(this.originalNode);
+                        this.treeView.Invalidate();
+                    }
+                    else DragHelper.ImageList_DragLeave(tree.Handle);
                 }
-                else DragHelper.ImageList_DragLeave(tree.Handle);
+                else LogMessage.Log("DragLeave: sender isn't a TreeView");
             }
-            else LogMessage.Log("DragLeave: sender isn't a TreeView");
+            catch (Exception ex)
+            {
+                LogMessage.LogF("ItemDrag event: " + ex.Message);
+            }
+        }
+
+        private void treeView_DragDrop(object sender, System.Windows.Forms.DragEventArgs e)
+        {
+            LogMessage.Log("DragDrop fired");
+
+            try
+            {
+                TreeView tree = sender as TreeView;
+
+                // Get drop node
+                Point xP = tree.PointToClient(new Point(e.X, e.Y));
+                TreeNode dropNode = tree.GetNodeAt(xP);
+                TreeNode dragNode = (TreeNode)e.Data.GetData(typeof(TreeNode));
+
+                String[] s = e.Data.GetFormats();
+                String msg = String.Empty;
+                foreach (String formats in s)
+                {
+                    msg += String.Format("{0}\r\n", formats);
+                }
+                //MessageBox.Show("DragDrop Formats Dropped :\r\n" + msg);
+                LogMessage.Log("DragDrop Formats Dropped : \r\n" + msg);
+                LogMessage.Log("DoDragDrop START: {0}", dragNode.Text);
+                LogMessage.Log("..DoDragDrop: Attempting to Drop.");
+
+                // Perform Cleanup first
+                //  -- Unlock updates
+                DragHelper.ImageList_DragLeave(this.treeView.Handle);
+                DragHelper.ImageList_EndDrag();
+
+                //  -- Stop Timer
+                this.interval = 0;
+                this.timer.Stop();
+                this.Cursor = Cursors.Default;
+                //  -- Additional Variable
+                CancelOnLeave = false;
+
+                if ((dragNode != null) && (dropNode != null))
+                {
+                    if (dragNode == dropNode)
+                    {
+                        LogMessage.Log("DoDragDrop: Premature End, dragNode == dropNode?! DragLeave wasn't called, somewhere needs to be Effects.None!");
+                        //  -- Reset TreeView
+                        RawSelect(this.originalNode);
+                        this.originalNode = null;
+                        return;
+                    }
+
+                    // Duh, I need to MANUALLY SaveToMemory BEFORE Swapping or Copying
+                    // This only works if I don't modify selection
+                    SaveToMemory(this.originalNode);
+
+                    tree.BeginUpdate(); // this.treeView.SuspendLayout();
+
+                    LogMessage.Log("..DoDragDrop: dragNode != dropNode");
+                    CMacro cm_drop = FindMacroByNode(dropNode),
+                            cm_drag = FindMacroByNode(dragNode);
+                    CMacroFile cmf_drag = FindMacroFileByNode(dragNode),
+                                cmf_drop = FindMacroFileByNode(dropNode);
+                    TagInfo tIdrag = dragNode.Tag as TagInfo, tIdrop = dropNode.Tag as TagInfo;
+
+                    if (tIdrag == null)
+                    {
+                        LogMessage.Log("..DragDrop: tIdrag == null: No TagInfo on dragNode!");
+                    }
+
+                    if (tIdrop == null)
+                    {
+                        LogMessage.Log("..DragDrop: tIdrop == null: No TagInfo on dropNode!");
+                    }
+
+                    // don't want waitcursor on Right-Click Menu
+                    if (e.Effect != DragDropEffects.Move)
+                        this.SetWaitCursor();
+
+                    if (e.Effect == DragDropEffects.Move) // Pop right-click menu
+                    {
+                        BuildAndShowDragAndDropContextMenu(dragNode, dropNode, e);
+                    }
+                    else if (tIdrag.Type == "macro")
+                    {
+                        #region DONE: if "macro"
+                        if (tIdrop.Type == "macro")
+                        {
+                            Modify(ref cm_drag, ref cm_drop, e);
+                        }
+                        #endregion
+                        #region DONE: else if "macrofile", "ctrlmacro", "altmacro"
+                        else if ((tIdrop.Type == "macrofile") || (tIdrop.Type == "ctrlmacro") ||
+                            (tIdrop.Type == "altmacro"))
+                        {
+                            if ((cmf_drop == cmf_drag) && (tIdrop.Type != "ctrlmacro") &&
+                                (tIdrop.Type != "altmacro"))
+                            {
+                                // if dropping to the same macro file
+                                // as where we're dragging from, nothing should change
+                                // because it would overwrite itself
+                                MessageBox.Show("Dropping a Macro to the same MacroFile it came from has no effect.", "No Effect");
+                            }
+                            else
+                            {
+                                #region DONE: Swap/Copy Drag & Drop Macro to Same MacroNumber in new MacroFile and update
+                                // if it's dropping to macrofile we already determined
+                                // that it's going to a different macrofile
+                                if (tIdrop.Type == "macrofile")
+                                    cm_drop = cmf_drop.Macros[cm_drag.MacroNumber];
+                                else // it's ctrlmacro or altmacro, so swap between the locations
+                                {
+                                    int number = cm_drag.MacroNumber;
+                                    if ((number > 9) && (number < 20)) // 10 - 19
+                                        cm_drop = cmf_drop.Macros[number - 10];
+                                    else if ((number >= 0) && (number <= 9))
+                                        cm_drop = cmf_drop.Macros[number + 10];
+                                    else cm_drop = cmf_drop.Macros[cm_drop.MacroNumber];
+                                }
+                                Modify(ref cm_drag, ref cm_drop, e);
+                                #endregion
+                            }
+                        }
+                        #endregion
+                    }
+                    else if (tIdrag.Type == "macrofile")
+                    {
+                        #region DONE: if "macrofile" period, handles all cases
+                        if (cmf_drag != null)
+                        {
+                            if (cmf_drop != null) // it's a macrofile, bar, or macro
+                            {
+                                if (e.Effect == DragDropEffects.Link)
+                                {
+                                    Swap(ref cmf_drop, ref cmf_drag);
+                                }
+                                else if (e.Effect == DragDropEffects.Copy)
+                                    cmf_drop.CopyFrom(cmf_drag);
+                            }
+                            else
+                            {
+                                // it's NOT a macrofile we're dropping to
+                                // see if we can find it.
+                                cmf_drop = GetDropFileFromInfo(dragNode, dropNode);
+                                if ((e.Effect == DragDropEffects.Link) && (cmf_drop != null))
+                                {
+                                    // it exists and we're swapping, do it
+                                    Swap(ref cmf_drop, ref cmf_drag);
+                                }
+                                else if ((e.Effect == DragDropEffects.Copy) && (cmf_drop != null))
+                                {
+                                    // if we're copying and it DOES exist
+                                    cmf_drop.CopyFrom(cmf_drag);
+                                }
+                                else if ((e.Effect == DragDropEffects.Copy) && (cmf_drop == null))
+                                {
+                                    // we're copying and it DOESN'T exist, create it.
+                                    cmf_drop = GetDropFileFromInfo(dragNode, dropNode, true);
+                                    cmf_drop.CopyFrom(cmf_drag);
+                                }
+                            }
+                        }
+                        #endregion
+                    }
+                    else if ((tIdrag.Type == "altmacro") || (tIdrag.Type == "ctrlmacro"))
+                    {
+                        #region DONE: if "altmacro", "ctrlmacro", or "macrofile"
+                        if ((tIdrop.Type == "altmacro") || (tIdrop.Type == "ctrlmacro") ||
+                            (tIdrop.Text == "macrofile"))
+                        {
+                            int SwapOrCopy = -1;
+                            if (e.Effect == DragDropEffects.Link)
+                                SwapOrCopy = 1;
+                            else if (e.Effect == DragDropEffects.Copy)
+                                SwapOrCopy = 2;
+                            HandleBarsToBarsOrFile(dragNode, dropNode, SwapOrCopy);
+                        }
+                        #endregion
+                    }
+                    else if (tIdrag.Type == "book")
+                    {
+                        #region if "book"
+                        if (tIdrop.Type == "book") // replace or copy over existing book
+                        {
+                            int SwapOrCopy = -1;
+                            if (e.Effect == DragDropEffects.Link)
+                                SwapOrCopy = 1;
+                            else if (e.Effect == DragDropEffects.Copy)
+                                SwapOrCopy = 2;
+
+                            HandleBookToBook(dragNode, dropNode, SwapOrCopy);
+                        }
+                        #endregion
+                        #region if "char", "folder", "template", "main"
+                        else if ((tIdrop.Type == "char") || (tIdrop.Type == "main") ||
+                                (tIdrop.Type == "folder") || (tIdrop.Type == "template"))
+                        {
+                            #region If Swapping, cancel (Only can swap books)
+                            if (e.Effect == DragDropEffects.Link)
+                            {
+                                LogMessage.Log("..DragDrop: Attempt to Swap book -> a folder type, unsupported");
+                            }
+                            #endregion
+                            #region If valid Copy to folder, char, template
+                            else if (e.Effect == DragDropEffects.Copy)
+                            {
+                                HandleBookToOthers(dragNode, dropNode);
+                            }
+                            #endregion
+                            #region DEBUG?: Everything else.
+                            else
+                            {
+                                LogMessage.Log("..DragDrop: Unsupported event, e.effect is not Swap or Copy");
+                            }
+                            #endregion
+                        }
+                        #endregion
+                    }
+                    else if ((tIdrag.Type == "char") || (tIdrag.Type == "folder"))
+                    {
+                        #region DONE -- need Notification Screen? if "char" or "folder"
+                        LogMessage.Log("DragDrop: char|folder");
+                        if ((tIdrop.Type == "char") || (tIdrop.Type == "folder") ||
+                            (tIdrop.Type == "template") || (tIdrop.Type == "main"))
+                        {
+                            HandleCharOrFolder(dragNode, dropNode);
+                        }
+                        else LogMessage.Log("Invalid Drop Type {0} for dropping \"char\" node", tIdrop.Type);
+                        #endregion
+                    }
+                    else
+                    {
+                        #region DONE: Unhandled situations
+                        if (e.Effect == DragDropEffects.Link) // Swap it.
+                        {
+                            MessageBox.Show("You can't swap that with that!", "Drag & Drop: Unsupported Combination", MessageBoxButtons.OK, MessageBoxIcon.Exclamation, MessageBoxDefaultButton.Button1);
+                            LogMessage.Log("..Drag & Drop Error, Unsupported Source/Target (Link)");
+                        }
+                        else if (e.Effect == DragDropEffects.Copy)
+                        {
+                            MessageBox.Show("You can't copy that there!", "Drag & Drop: Unsupported Combination", MessageBoxButtons.OK, MessageBoxIcon.Exclamation, MessageBoxDefaultButton.Button1);
+                            LogMessage.Log("..Drag & Drop Error, Unsupported Source/Target Combination (Copy)");
+                        }
+                        else // Everything Else
+                        {
+                            MessageBox.Show("OMGWTFBBQ! WHAT DID YOU DO?!?!\r\nUmm, You should NOT have received this message!", "Easy BUG: Contact Developer with exact cause.", MessageBoxButtons.OK, MessageBoxIcon.Exclamation, MessageBoxDefaultButton.Button1);
+                            LogMessage.Log("..ERROR: Copy or Swap not the option given. DragDropEffects: " + e.Effect);
+                        }
+                        #endregion
+                    }
+                }
+
+                // On Success, reset these back as well.
+                ChangeButtonNames(this.originalNode);
+                FillForm(this.originalNode); // Fill the Form with original Node just in case
+                //  -- Reset TreeView
+                RawSelect(this.originalNode);
+                this.originalNode = null;
+                this.RestoreCursor();
+                tree.EndUpdate();
+                LogMessage.Log("DragDrop END: Drop Attempt Done.");
+            }
+            catch (Exception ex)
+            {
+                LogMessage.LogF("ItemDrag event: " + ex.Message);
+            }
         }
 
         private void BuildAndShowDragAndDropContextMenu(TreeNode dragNode, TreeNode dropNode, DragEventArgs e)
@@ -4743,21 +5069,21 @@ namespace FFXI_ME_v2
                 #region if "altmacro" or "ctrlmacro"
                 tmsi[2] = new ToolStripMenuItem(String.Format("Swap {0} Bar and {1}",
                     (tIdrag.Type == "altmacro") ? "Alt" : "Ctrl",
-                    (tIdrop.Type == "altmacro") ? "Alt Bar" : 
+                    (tIdrop.Type == "altmacro") ? "Alt Bar" :
                     (tIdrop.Type == "ctrlmacro") ? "Ctrl Bar" :
                     (tIdrag.Type == "altmacro") ? "Alt Bar" :
-                    (tIdrag.Type == "ctrlmacro") ? "Ctrl Bar" : "This Location"), 
+                    (tIdrag.Type == "ctrlmacro") ? "Ctrl Bar" : "This Location"),
                     Resources.SwapMacro, DynamicMenu_Click);
                 TagInfo tI = new TagInfo("bars", "swap", dragNode, dropNode);
                 tmsi[2].Tag = tI as Object;
                 tmsi[2].Name = "RightClickModify";
 
-                tmsi[3] = new ToolStripMenuItem(String.Format("Copy {0} Bar to {1}", 
+                tmsi[3] = new ToolStripMenuItem(String.Format("Copy {0} Bar to {1}",
                     (tIdrag.Type == "altmacro") ? "Alt" : "Ctrl",
-                    (tIdrop.Type == "altmacro") ? "Alt Bar" : 
+                    (tIdrop.Type == "altmacro") ? "Alt Bar" :
                     (tIdrop.Type == "ctrlmacro") ? "Ctrl Bar" :
                     (tIdrag.Type == "altmacro") ? "Alt Bar" :
-                    (tIdrag.Type == "ctrlmacro") ? "Ctrl Bar" : "This Location"), 
+                    (tIdrag.Type == "ctrlmacro") ? "Ctrl Bar" : "This Location"),
                     Resources.CopyHS, DynamicMenu_Click);
                 tI = new TagInfo("bars", "copy", dragNode, dropNode);
                 tmsi[3].Tag = tI as Object;
@@ -4974,253 +5300,7 @@ namespace FFXI_ME_v2
             }
             #endregion
             LogMessage.Log("DragDrop END: Drop Attempt Done, Right-Click Menu created, returning.");
-        #endregion
-        }
-
-        private void treeView_DragDrop(object sender, System.Windows.Forms.DragEventArgs e)
-        {
-            TreeView tree = sender as TreeView;
-
-            // Get drop node
-            Point xP = tree.PointToClient(new Point(e.X, e.Y));
-            TreeNode dropNode = tree.GetNodeAt(xP);
-            TreeNode dragNode = (TreeNode)e.Data.GetData(typeof(TreeNode));
-
-            LogMessage.Log("DoDragDrop START: {0}", dragNode.Text);
-            LogMessage.Log("..DoDragDrop: Attempting to Drop.");
-
-            // Perform Cleanup first
-            //  -- Unlock updates
-            DragHelper.ImageList_DragLeave(this.treeView.Handle);
-            DragHelper.ImageList_EndDrag();
-
-            //  -- Stop Timer
-            this.interval = 0;
-            this.timer.Stop();
-            this.Cursor = Cursors.Default;
-            //  -- Additional Variable
-            CancelOnLeave = false;
-
-            if ((dragNode != null) && (dropNode != null))
-            {
-                if (dragNode == dropNode)
-                {
-                    LogMessage.Log("DoDragDrop: Premature End, dragNode == dropNode?! DragLeave wasn't called, somewhere needs to be Effects.None!");
-                    //  -- Reset TreeView
-                    RawSelect(this.originalNode);
-                    this.originalNode = null;
-                    return;
-                }
-
-                // Duh, I need to MANUALLY SaveToMemory BEFORE Swapping or Copying
-                // This only works if I don't modify selection
-                SaveToMemory(this.originalNode);
-
-                tree.BeginUpdate(); // this.treeView.SuspendLayout();
-
-                LogMessage.Log("..DoDragDrop: dragNode != dropNode");
-                CMacro cm_drop = FindMacroByNode(dropNode),
-                        cm_drag = FindMacroByNode(dragNode);
-                CMacroFile cmf_drag = FindMacroFileByNode(dragNode),
-                            cmf_drop = FindMacroFileByNode(dropNode);
-                TagInfo tIdrag = dragNode.Tag as TagInfo, tIdrop = dropNode.Tag as TagInfo;
-
-                if (tIdrag == null)
-                {
-                    LogMessage.Log("..DragDrop: tIdrag == null: No TagInfo on dragNode!");
-                }
-
-                if (tIdrop == null)
-                {
-                    LogMessage.Log("..DragDrop: tIdrop == null: No TagInfo on dropNode!");
-                }
-
-                // don't want waitcursor on Right-Click Menu
-                if (e.Effect != DragDropEffects.Move)
-                    this.SetWaitCursor();
-
-                if (e.Effect == DragDropEffects.Move) // Pop right-click menu
-                {
-                    BuildAndShowDragAndDropContextMenu(dragNode, dropNode, e);
-                }
-                else if (tIdrag.Type == "macro")
-                {
-                    #region DONE: if "macro"
-                    if (tIdrop.Type == "macro")
-                    {
-                        Modify(ref cm_drag, ref cm_drop, e);
-                    }
-                    #endregion
-                    #region DONE: else if "macrofile", "ctrlmacro", "altmacro"
-                    else if ((tIdrop.Type == "macrofile") || (tIdrop.Type == "ctrlmacro") ||
-                        (tIdrop.Type == "altmacro"))
-                    {
-                        if ((cmf_drop == cmf_drag) && (tIdrop.Type != "ctrlmacro") &&
-                            (tIdrop.Type != "altmacro"))
-                        {
-                            // if dropping to the same macro file
-                            // as where we're dragging from, nothing should change
-                            // because it would overwrite itself
-                            MessageBox.Show("Dropping a Macro to the same MacroFile it came from has no effect.", "No Effect");
-                        }
-                        else
-                        {
-                            #region DONE: Swap/Copy Drag & Drop Macro to Same MacroNumber in new MacroFile and update
-                            // if it's dropping to macrofile we already determined
-                            // that it's going to a different macrofile
-                            if (tIdrop.Type == "macrofile")
-                                cm_drop = cmf_drop.Macros[cm_drag.MacroNumber];
-                            else // it's ctrlmacro or altmacro, so swap between the locations
-                            {
-                                int number = cm_drag.MacroNumber;
-                                if ((number > 9) && (number < 20)) // 10 - 19
-                                    cm_drop = cmf_drop.Macros[number - 10];
-                                else if ((number >= 0) && (number <= 9))
-                                    cm_drop = cmf_drop.Macros[number + 10];
-                                else cm_drop = cmf_drop.Macros[cm_drop.MacroNumber];
-                            }
-                            Modify(ref cm_drag, ref cm_drop, e);
-                            #endregion
-                        }
-                    }
-                    #endregion
-                }
-                else if (tIdrag.Type == "macrofile")
-                {
-                    #region DONE: if "macrofile" period, handles all cases
-                    if (cmf_drag != null)
-                    {
-                        if (cmf_drop != null) // it's a macrofile, bar, or macro
-                        {
-                            if (e.Effect == DragDropEffects.Link)
-                            {
-                                Swap(ref cmf_drop, ref cmf_drag);
-                            }
-                            else if (e.Effect == DragDropEffects.Copy)
-                                cmf_drop.CopyFrom(cmf_drag);
-                        }
-                        else
-                        {
-                            // it's NOT a macrofile we're dropping to
-                            // see if we can find it.
-                            cmf_drop = GetDropFileFromInfo(dragNode, dropNode);
-                            if ((e.Effect == DragDropEffects.Link) && (cmf_drop != null))
-                            {
-                                // it exists and we're swapping, do it
-                                Swap(ref cmf_drop, ref cmf_drag);
-                            }
-                            else if ((e.Effect == DragDropEffects.Copy) && (cmf_drop != null))
-                            {
-                                // if we're copying and it DOES exist
-                                cmf_drop.CopyFrom(cmf_drag);
-                            }
-                            else if ((e.Effect == DragDropEffects.Copy) && (cmf_drop == null))
-                            {
-                                // we're copying and it DOESN'T exist, create it.
-                                cmf_drop = GetDropFileFromInfo(dragNode, dropNode, true);
-                                cmf_drop.CopyFrom(cmf_drag);
-                            }
-                        }
-                    }
-                    #endregion
-                }
-                else if ((tIdrag.Type == "altmacro") || (tIdrag.Type == "ctrlmacro"))
-                {
-                    #region DONE: if "altmacro", "ctrlmacro", or "macrofile"
-                    if ((tIdrop.Type == "altmacro") || (tIdrop.Type == "ctrlmacro") ||
-                        (tIdrop.Text == "macrofile"))
-                    {
-                        int SwapOrCopy = -1;
-                        if (e.Effect == DragDropEffects.Link)
-                            SwapOrCopy = 1;
-                        else if (e.Effect == DragDropEffects.Copy)
-                            SwapOrCopy = 2;
-                        HandleBarsToBarsOrFile(dragNode, dropNode, SwapOrCopy);
-                    }
-                    #endregion
-                }
-                else if (tIdrag.Type == "book")
-                {
-                    #region if "book"
-                    if (tIdrop.Type == "book") // replace or copy over existing book
-                    {
-                        int SwapOrCopy = -1;
-                        if (e.Effect == DragDropEffects.Link)
-                            SwapOrCopy = 1;
-                        else if (e.Effect == DragDropEffects.Copy)
-                            SwapOrCopy = 2;
-
-                        HandleBookToBook(dragNode, dropNode, SwapOrCopy);
-                    }
-                    #endregion
-                    #region if "char", "folder", "template", "main"
-                    else if ((tIdrop.Type == "char") || (tIdrop.Type == "main") ||
-                            (tIdrop.Type == "folder") || (tIdrop.Type == "template"))
-                    {
-                        #region If Swapping, cancel (Only can swap books)
-                        if (e.Effect == DragDropEffects.Link)
-                        {
-                            LogMessage.Log("..DragDrop: Attempt to Swap book -> a folder type, unsupported");
-                        }
-                        #endregion
-                        #region If valid Copy to folder, char, template
-                        else if (e.Effect == DragDropEffects.Copy)
-                        {
-                            HandleBookToOthers(dragNode, dropNode);
-                        }
-                        #endregion
-                        #region DEBUG?: Everything else.
-                        else
-                        {
-                            LogMessage.Log("..DragDrop: Unsupported event, e.effect is not Swap or Copy");
-                        }
-                        #endregion
-                    }
-                    #endregion
-                }
-                else if ((tIdrag.Type == "char") || (tIdrag.Type == "folder"))
-                {
-                    #region DONE -- need Notification Screen? if "char" or "folder"
-                    LogMessage.Log("DragDrop: char|folder");
-                    if ((tIdrop.Type == "char") || (tIdrop.Type == "folder") ||
-                        (tIdrop.Type == "template") || (tIdrop.Type == "main"))
-                    {
-                        HandleCharOrFolder(dragNode, dropNode);
-                    }
-                    else LogMessage.Log("Invalid Drop Type {0} for dropping \"char\" node", tIdrop.Type);
-                    #endregion
-                }
-                else
-                {
-                    #region DONE: Unhandled situations
-                    if (e.Effect == DragDropEffects.Link) // Swap it.
-                    {
-                        MessageBox.Show("You can't swap that with that!", "Drag & Drop: Unsupported Combination", MessageBoxButtons.OK, MessageBoxIcon.Exclamation, MessageBoxDefaultButton.Button1);
-                        LogMessage.Log("..Drag & Drop Error, Unsupported Source/Target (Link)");
-                    }
-                    else if (e.Effect == DragDropEffects.Copy)
-                    {
-                        MessageBox.Show("You can't copy that there!", "Drag & Drop: Unsupported Combination", MessageBoxButtons.OK, MessageBoxIcon.Exclamation, MessageBoxDefaultButton.Button1);
-                        LogMessage.Log("..Drag & Drop Error, Unsupported Source/Target Combination (Copy)");
-                    }
-                    else // Everything Else
-                    {
-                        MessageBox.Show("OMGWTFBBQ! WHAT DID YOU DO?!?!\r\nUmm, You should NOT have received this message!", "Easy BUG: Contact Developer with exact cause.", MessageBoxButtons.OK, MessageBoxIcon.Exclamation, MessageBoxDefaultButton.Button1);
-                        LogMessage.Log("..ERROR: Copy or Swap not the option given. DragDropEffects: " + e.Effect);
-                    }
-                    #endregion
-                }
-            }
-
-            // On Success, reset these back as well.
-            ChangeButtonNames(this.originalNode);
-            FillForm(this.originalNode); // Fill the Form with original Node just in case
-            //  -- Reset TreeView
-            RawSelect(this.originalNode);
-            this.originalNode = null;
-            this.RestoreCursor();
-            tree.EndUpdate();
-            LogMessage.Log("DragDrop END: Drop Attempt Done.");
+            #endregion
         }
 
         private void HandleBarsToBarsOrFile(TreeNode dragNode, TreeNode dropNode, int SwapOrCopy)
