@@ -601,6 +601,7 @@ namespace Yekyaa.FFXIEncoding
             if ((en_d_msg == null) || (en_d_msg.EntryList == null) || (en_d_msg.Header == null))
                 return;
 
+            // Setup Spell Info structure for program
             if (SpellInfo == null)
             {
                 SpellInfo = new FFXIATPhrase[en_d_msg.Header.EntryCount];
@@ -611,9 +612,7 @@ namespace Yekyaa.FFXIEncoding
             }
 
             int step = SplashScreen.ComputeStep(SpellInfo.Length > 0 ? SpellInfo.Length : 1);
-            // Setup Spell Info structure for program
 
-            // for each entry
             for (int i = 0; i < SpellInfo.Length; i++)
             {
                 // to save memory, only create a structure for a valid Spell Info block
