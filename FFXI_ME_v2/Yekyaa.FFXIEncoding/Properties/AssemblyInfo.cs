@@ -11,7 +11,7 @@ using System.Resources;
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("Baggett Enterprises, Inc.")]
 [assembly: AssemblyProduct("FFXI Encoding Assembly")]
-[assembly: AssemblyCopyright("Copyright© Chris Baggett 2007-2010")]
+[assembly: AssemblyCopyright("Copyright © Chris Baggett 2007-2010")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 
