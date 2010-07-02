@@ -11,7 +11,7 @@ using System.Resources;
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("Created by Yekyaa Of Pandemonium... err Asura")]
 [assembly: AssemblyProduct("Yekyaa's FFXI ME! v2")]
-[assembly: AssemblyCopyright("Chris Baggett 2005-2009")]
+[assembly: AssemblyCopyright("Chris Baggett 2005-2010")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 
