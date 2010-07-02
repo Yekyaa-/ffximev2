@@ -4,7 +4,7 @@
  * [QuickStart Quick Start Guide]
  * *Information*
     * [Using Using the Macro Editor]
-    * [DefMenu Default menu.xml]
+    * [OriginalMenuXML Original menu.xml]
     * [Test Blah4]
  * [Test Line1]
  * [Test Line2]
