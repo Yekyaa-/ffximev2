@@ -5,10 +5,5 @@
  * *Information*
     * [Using_FFXI_ME Using the Macro Editor]
     * [OriginalMenuXML Original menu.xml]
-    * [Test Blah4]
- * [Test Line1]
- * [Test Line2]
- * [Test Line3]
-
 
 <wiki:gadget url="http://google-code-project-hosting-gadgets.googlecode.com/svn/build/prod/changes/gcChanges.xml" up_changes="1" title="FFXI ME! v2 Recent Changes" height="150" width="250" border="1" up_projectName="ffximev2" />
