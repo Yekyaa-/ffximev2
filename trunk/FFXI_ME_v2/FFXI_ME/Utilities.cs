@@ -196,7 +196,7 @@ namespace FFXI_ME_v2
         /// 
         static public List<String> PathToOpen = new List<string>();
 
-        //static public bool GroupByLanguage = false;
+        static private String DeleteNotifier = "<x_ffxime_x> Delete Me";
 
         /// <summary>
         /// Stores Full Path of the Program's default User Save location. (Not intended to be saved!) (Internal)
@@ -310,6 +310,160 @@ namespace FFXI_ME_v2
             get { return _notchanged; }
         }
         #endregion
+
+        private static bool Deleteable(String x)
+        {
+            if (x == DeleteNotifier)
+                return true;
+            return false;
+        }
+
+        public static bool IsFile(FileAttributes fa)
+        {
+            if ((fa & FileAttributes.Directory) != FileAttributes.Directory)
+                return true;
+            return false;
+        }
+
+        public static bool IsDirectory(FileAttributes fa)
+        {
+            if ((fa & FileAttributes.Directory) == FileAttributes.Directory)
+                return true;
+            return false;
+        }
+
+        static public bool AddLocation(String location)
+        {
+
+            FileInfo fi = new FileInfo(location);
+            DirectoryInfo di = new DirectoryInfo(location);
+            String dir = di.FullName;
+
+            // Scenario #1, PathToOpen is Empty, add it no matter what.
+            if (Preferences.PathToOpen.Count == 0)
+            {
+                if (IsFile(di.Attributes))
+                    Preferences.PathToOpen.Add(fi.FullName);
+                else Preferences.PathToOpen.Add(di.FullName.TrimEnd('\\'));
+                return true;
+            }
+
+            if (IsFile(di.Attributes))
+            {
+                dir = fi.DirectoryName.TrimEnd('\\');
+            }
+
+            if (Preferences.PathToOpen.Contains(dir)) // if we already have this exact location, skip it
+            {
+                return false;
+            }
+
+            bool Skip = false, Delete = false;
+            String prefDir = String.Empty;
+            DirectoryInfo prefdi = null;
+            FileInfo preffi = null;
+
+            for (int c = 0; c < Preferences.PathToOpen.Count; c++)
+            {
+                prefdi = new DirectoryInfo(Preferences.PathToOpen[c]);
+                preffi = new FileInfo(Preferences.PathToOpen[c]);
+                prefDir = prefdi.FullName.TrimEnd('\\');
+
+                // scenarios
+                // 1. PathToOpen contains nothing, add whatever it is
+                // 2. PathToOpen contains a fileName F1 (C:\Tools.dat), new fileName (F2) (C:\Tool1.dat; C:\Tool\tool1.dat) read in... Keep both, eventually a folder will contain one or other -- solution, add F2, keep F1
+                // 3. PathToOpen contains a fileName F1 (C:\Tools.dat), new directory (D1) (C:\) read in, F1 will be found reading D1 -- solution, delete F1, add D1
+                // 4. PathToOpen contains a fileName F1 (C:\Tools.dat), new directory D1 (C:\Tools\File), F1 won't be found when searching D1 -- solution, add D1, keep F1
+                // 5. D1 (C:\tools) loaded, F1 (C:\tools\blah.dat) will be found when searching D1 -- solution skip F1, keep D1
+                // 6. D1 (C:\tools) loaded, F1 (C:\blah.dat) will not be found when searching D1 -- solution add F1, continue
+                // 7. D1 (C:\) loaded, D2 (C:\tools) read in that will be found when searching D1 -- solution, skip D2, keep D1
+                // 8. D1 (C:\tools) loaded, D2 (C:\) read in but D1 will be found when searching D2 -- solution delete D1, add D2
+
+                if (IsFile(prefdi.Attributes))
+                {
+                    // Preferences is a File
+                    prefDir = preffi.DirectoryName.TrimEnd('\\');
+
+                    if (IsFile(di.Attributes))
+                    {
+                        // Scenario #2, keep em both.
+
+                        // to be sure, don't add the exact same file
+                        if (preffi.FullName == fi.FullName)
+                            return false;
+                    }
+                    else
+                    {
+                        // Preferences is a File, challenger is directory
+                        if (Preferences.PathToOpen[c].Contains(dir + "\\"))
+                        {
+                            // Scenario #3, Delete F1, Add D1
+                            Preferences.PathToOpen[c] = DeleteNotifier;
+                            Delete = true;
+                            // Don't return here, continue looping through looking for others to delete
+                            continue;
+                        }
+                        else
+                        {
+                            // Scenario #4, Keep F1, Add D1
+                            continue;
+                        }
+                    }
+                }
+                else
+                {
+                    // Preferences is a Directory
+                    if (IsFile(di.Attributes))
+                    {
+                        if (fi.FullName.Contains(prefDir + "\\"))
+                        {
+                            // Scenario #5, skip F1, keep D1, may as well return since i can't add the file definitely
+                            return false;
+                        }
+                        else
+                        {
+                            // Scenario #6, can't definitely add it, so continue on
+                            continue;
+                        }
+                    }
+                    else
+                    {
+                        // Both are directories
+                        // If they're the same, ignore the new one
+                        if (di.FullName == prefdi.FullName)
+                            return false;
+                        else if (di.FullName.Contains(prefDir + "\\"))
+                        {
+                            // Scenario #7, we'll search D1 and find D2, so do not add at all
+                            return false;
+                        }
+                        else if (prefDir.Contains(di.FullName.TrimEnd('\\') + "\\"))
+                        {
+                            // Scenario #8
+                            Preferences.PathToOpen[c] = DeleteNotifier;
+                            Delete = true;
+                            continue;
+                        }
+                        else
+                        {
+                            continue;
+                        }
+                    }
+                }
+            }
+
+            if (Delete)
+                Preferences.PathToOpen.RemoveAll(Preferences.Deleteable);
+
+            if (Skip)
+                return false;
+
+            if (IsFile(di.Attributes))
+                Preferences.PathToOpen.Add(fi.FullName);
+            else Preferences.PathToOpen.Add(di.FullName);
+
+            return true;
+        }
     }
 
     static public class Icons
