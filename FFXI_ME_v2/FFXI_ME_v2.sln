@@ -5,8 +5,6 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FFXI_ME_v2", "FFXI_ME\FFXI_
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Yekyaa.FFXIEncoding", "Yekyaa.FFXIEncoding\Yekyaa.FFXIEncoding.csproj", "{7261C13D-DC80-4304-B123-B201661E823B}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PrintCodes", "Yekyaa.TestApp\PrintCodes.csproj", "{B646DD45-DECC-4B30-912A-D7AF794A52FC}"
-EndProject
 Global
 	GlobalSection(SubversionScc) = preSolution
 		Svn-Managed = True
@@ -34,13 +32,6 @@ Global
 		{7261C13D-DC80-4304-B123-B201661E823B}.Release|Any CPU.Build.0 = Release|Any CPU
 		{7261C13D-DC80-4304-B123-B201661E823B}.Release|x86.ActiveCfg = Release|x86
 		{7261C13D-DC80-4304-B123-B201661E823B}.Release|x86.Build.0 = Release|x86
-		{B646DD45-DECC-4B30-912A-D7AF794A52FC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{B646DD45-DECC-4B30-912A-D7AF794A52FC}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{B646DD45-DECC-4B30-912A-D7AF794A52FC}.Debug|x86.ActiveCfg = Debug|Any CPU
-		{B646DD45-DECC-4B30-912A-D7AF794A52FC}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{B646DD45-DECC-4B30-912A-D7AF794A52FC}.Release|Any CPU.Build.0 = Release|Any CPU
-		{B646DD45-DECC-4B30-912A-D7AF794A52FC}.Release|x86.ActiveCfg = Release|x86
-		{B646DD45-DECC-4B30-912A-D7AF794A52FC}.Release|x86.Build.0 = Release|x86
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
