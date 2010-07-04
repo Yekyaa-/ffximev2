@@ -535,6 +535,8 @@
   <ItemGroup>
     <Content Include="FFXI_ME.ico" />
     <None Include="Resources\Csearch_00.gif" />
+    <Content Include="Resources\FFXI_ME.ico" />
+    <Content Include="Resources\YekBannerMedium.jpg" />
     <Content Include="YekCel.ico" />
     <None Include="Resources\signature.png" />
   </ItemGroup>
