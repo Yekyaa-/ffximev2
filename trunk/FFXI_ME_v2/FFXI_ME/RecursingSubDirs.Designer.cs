@@ -37,18 +37,19 @@ namespace FFXI_ME_v2
             this.label1.Dock = System.Windows.Forms.DockStyle.Top;
             this.label1.Location = new System.Drawing.Point(0, 0);
             this.label1.Name = "label1";
-            this.label1.Size = new System.Drawing.Size(264, 47);
+            this.label1.Size = new System.Drawing.Size(264, 69);
             this.label1.TabIndex = 1;
             this.label1.Text = "Recursing Subdirectories and\r\nLoading Macro Files... Please wait...";
             this.label1.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
             // 
             // cancelbutton
             // 
-            this.cancelbutton.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom)
-                        | System.Windows.Forms.AnchorStyles.Left)
+            this.cancelbutton.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)
                         | System.Windows.Forms.AnchorStyles.Right)));
             this.cancelbutton.DialogResult = System.Windows.Forms.DialogResult.Abort;
-            this.cancelbutton.Location = new System.Drawing.Point(95, 50);
+            this.cancelbutton.Image = global::FFXI_ME_v2.Properties.Resources.Csearch_00;
+            this.cancelbutton.ImageAlign = System.Drawing.ContentAlignment.MiddleLeft;
+            this.cancelbutton.Location = new System.Drawing.Point(96, 72);
             this.cancelbutton.Name = "cancelbutton";
             this.cancelbutton.Size = new System.Drawing.Size(75, 23);
             this.cancelbutton.TabIndex = 2;
@@ -60,7 +61,7 @@ namespace FFXI_ME_v2
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.CancelButton = this.cancelbutton;
-            this.ClientSize = new System.Drawing.Size(264, 85);
+            this.ClientSize = new System.Drawing.Size(264, 107);
             this.ControlBox = false;
             this.Controls.Add(this.cancelbutton);
             this.Controls.Add(this.label1);
