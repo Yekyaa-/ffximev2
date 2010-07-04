@@ -2003,6 +2003,8 @@ namespace FFXI_ME_v2
                 myThread.Start();
                 Thread.Sleep(500);
 
+                tempFolderName = temp_di.FullName;
+
                 foreach (string x in paths)
                 {
                     String path = x;
@@ -2046,8 +2048,6 @@ namespace FFXI_ME_v2
                         }
                     }
 
-                    tempFolderName = temp_di.FullName;
-
                     if ((temp_di.Exists) && (!path.Contains(temp_di.FullName)) && (!temp_di.FullName.Contains(path))) // Templates path isn't contained in main path.
                     {
                         //foreach (string s in tempfileList)
@@ -2055,13 +2055,21 @@ namespace FFXI_ME_v2
                     }
                     else if (!temp_di.Exists)
                     {
-                        LogMessage.Log(".." + temp_di.FullName + " doesn't exist under path (creating empty node): " + path);
+
                     }
                     else
                     {
-                        TemplateFolderOK = false;
-                        LogMessage.Log("..Templates folder exists as part of the Selected directory, ignoring");
+                        if (TemplateFolderOK)
+                        {
+                            TemplateFolderOK = false;
+                            LogMessage.Log("..Templates folder exists as part of the Selected directory, ignoring");
+                        }
                     }
+                }
+
+                if (!temp_di.Exists)
+                {
+                    LogMessage.Log(".." + temp_di.FullName + " doesn't exist at all and doesn't conflict with existing selected paths (creating empty node)");
                 }
 
                 if ((mcrfileList != null) && (mcrfileList.Count > 0))
@@ -2266,6 +2274,8 @@ namespace FFXI_ME_v2
             String s1 = temppath.TrimEnd('\\');
             String tempNodeName = String.Empty;
             TreeNode mainNode = null;
+            String IsTempDrive = Path.GetPathRoot(temppath).TrimEnd('\\');
+            DirectoryInfo temp_di;
 
             int x = 0;
             bool Enable_Open_Folders = false;
@@ -2284,22 +2294,55 @@ namespace FFXI_ME_v2
 
                 mainNode = null;
 
-                if ((mainpath.Length > 0) && (mainpath[mainpath.Length - 1] == '\\')) // if it ends in '\\' it's a drive
+                String IsItDrive = Path.GetPathRoot(mainpath).TrimEnd('\\');
+
+                FileInfo fi = new FileInfo(s);
+                DirectoryInfo di = new DirectoryInfo(s);
+                String directory = di.FullName;
+
+                if (Preferences.IsFile(di.Attributes))
                 {
-                    DriveInfo drv = new DriveInfo(s);
+                    directory = fi.DirectoryName;
+                }
+
+                if (s == IsItDrive)
+                {
+                    DriveInfo drv = new DriveInfo(IsItDrive);
                     try
                     {
                         if (drv.VolumeLabel.Trim() == String.Empty)
-                            mainNodeName = "Local Disk (" + s + ")";
-                        else mainNodeName = drv.VolumeLabel + " (" + s + ")";
+                            mainNodeName = "Local Disk (" + IsItDrive + ")";
+                        else mainNodeName = drv.VolumeLabel + " (" + IsItDrive + ")";
                     }
                     catch (IOException e)
                     {
                         LogMessage.Log("I/O Exception: " + s + " '" + e.Message + "'");
-                        mainNodeName = s;
+                        mainNodeName = "Local Disk (" + IsItDrive + ")";
+                    }
+                    s = IsItDrive;
+                }
+                else
+                {
+                    if (Preferences.IsFile(di.Attributes))
+                    {
+                        // If it's a file, strip the filename with (GetDirectoryName) and then Get the first directory from that)
+                         mainNodeName = Path.GetFileName(fi.DirectoryName);
+
+                        // If it's a filename and it got THIS far, it's separate from the regular directories that were chosen
+                        // special case requires pulling just the root directory and going from there.
+                        //mainNodeName = Path.GetPathRoot(s).TrimEnd('\\');
+                    }
+                    else if (Preferences.IsDirectory(di.Attributes))
+                    {
+                        mainNodeName = Path.GetFileName(di.FullName); // s.Remove(0, pos + 1); // if it doesn't end in a \\ it's a directory
                     }
                 }
-                else mainNodeName = Path.GetFileName(s); // s.Remove(0, pos + 1); // if it doesn't end in a \\ it's a directory
+
+                if ((this.treeView.Nodes != null) && (this.treeView.Nodes.Count > 0))
+                {
+                    if (this.treeView.Nodes.ContainsKey(mainNodeName))
+                        continue;
+                }
 
                 #region Setup main nodes
                 if (mainpath == String.Format("{0}\\USER\\{1}", this.FFXIInstallPath.TrimEnd('\\'), mainNodeName))
@@ -2328,16 +2371,15 @@ namespace FFXI_ME_v2
                     #endregion
                 }
                 else mainNode = this.treeView.Nodes.Add(mainNodeName, mainNodeName, "ClosedFolder", "OpenFolder");
-                TagInfo tI = new TagInfo("main", s);
+                TagInfo tI = new TagInfo("main", directory);
                 mainNode.Tag = tI;
                 tsmi[x] = new ToolStripMenuItem("Open " + mainNodeName + " Folder", Resources.openHS, DynamicMenu_Click);
                 tsmi[x].Tag = mainNode as Object;
                 tsmi[x].Name = "Open_Folder";
-                if (Directory.Exists(s))
+                if (Directory.Exists(directory))
                 {
                     tsmi[x].Enabled = true;
                     Enable_Open_Folders = true;
-
                 }
                 else tsmi[x].Enabled = false;
                 x++;
@@ -2353,6 +2395,9 @@ namespace FFXI_ME_v2
 
                 #endregion
             }
+
+            if (x < tsmi.Length)
+                Array.Resize(ref tsmi, x);
 
             if (Open_Main_Folder.DropDownItems.Count > 0)
                 Open_Main_Folder.DropDownItems.Clear();
@@ -2378,25 +2423,30 @@ namespace FFXI_ME_v2
 
             #region Build Template Node
             #region Set Templates Node name
+            temp_di = new DirectoryInfo(s1);
+
             if (temppath != String.Empty)
             {
 
-                if (temppath[temppath.Length - 1] == '\\') // if it ends in '\\' it's a drive
+                if (s1 == IsTempDrive) // temppath[temppath.Length - 1] == '\\') // if it ends in '\\' it's a drive
                 {
-                    DriveInfo drv = new DriveInfo(s1);
+                    DriveInfo drv = new DriveInfo(IsTempDrive);
                     try
                     {
                         if (drv.VolumeLabel.Trim() == String.Empty)
-                            tempNodeName = "Local Disk (" + s1 + ")";
-                        else tempNodeName = drv.VolumeLabel + " (" + s1 + ")";
+                            tempNodeName = "Local Disk (" + IsTempDrive + ")";
+                        else tempNodeName = drv.VolumeLabel + " (" + IsTempDrive + ")";
                     }
                     catch (IOException e)
                     {
-                        LogMessage.Log("I/O Exception: " + s1 + " '" + e.Message + "'");
-                        tempNodeName = s1;
+                        LogMessage.Log("I/O Exception: " + IsTempDrive + " '" + e.Message + "'");
+                        tempNodeName = IsTempDrive;
                     }
                 }
-                else tempNodeName = Path.GetFileName(s1); // if it doesn't end in a \\ it's a directory
+                else
+                {
+                    tempNodeName = Path.GetFileName(temp_di.FullName); // if it doesn't end in a \\ it's a directory
+                }
             }
             #endregion
 
@@ -2407,9 +2457,9 @@ namespace FFXI_ME_v2
 
             if (templateNode != null)
             {
-                TagInfo tI2 = new TagInfo("template", s1);
+                TagInfo tI2 = new TagInfo("template", temp_di.FullName);
                 templateNode.Tag = tI2;
-                if (Directory.Exists(s1))
+                if (temp_di.Exists)
                     Open_Template_Folder.Enabled = true;
                 else Open_Template_Folder.Enabled = false;
                 Open_Template_Folder.Text = "Open " + templateNode.Text + " Folder";
@@ -2845,11 +2895,6 @@ namespace FFXI_ME_v2
             Preferences.Program_Language = settings.GetSettingLanguage("MainProgram/ProgramLanguage", Preferences.Program_Language);
             Preferences.EnterCreatesNewLine = settings.GetSetting("MainProgram/EnterCreatesNewLine", Preferences.EnterCreatesNewLine);
 
-            if (!settings.DeleteSetting("MainProgram/LastLoaded"))
-            {
-                LogMessage.Log("LastLoaded setting not present or undeleteable");
-            }
-
             if (Preferences.Program_Language == FFXIATPhraseLoader.ffxiLanguages.LANG_JAPANESE)
             {
                 japan.Visible = true;
@@ -2923,60 +2968,39 @@ namespace FFXI_ME_v2
             }
             #endregion
             #region Load Last Opened Folders, if any
-            String[] FolderNodes = settings.GetNodeList("LastLoadedFolders");
-            bool Delete, Skip;
+
+            //respect original setting
+            String oldsetting = settings.GetSetting("MainProgram/LastLoaded", String.Empty);
+
+            // backward compatibility for old "node name"
+            // new node name "LastLoadedLocations" also accepts files.
+            String nodename = "LastLoadedFolders";
+            String[] FolderNodes = settings.GetNodeList(nodename);
+            if (FolderNodes == null)
+            {
+                nodename = "LastLoadedLocations";
+                FolderNodes = settings.GetNodeList(nodename);
+            }
+
+            if (oldsetting != String.Empty)
+            {
+                if (FolderNodes == null)
+                    FolderNodes = new String[1];
+                else Array.Resize(ref FolderNodes, FolderNodes.Length + 1);
+                FolderNodes[FolderNodes.Length - 1] = oldsetting;
+            }
 
             if ((FolderNodes != null) && (FolderNodes.Length > 0))
             {
                 foreach (String Folder in FolderNodes)
-                //int cnt = 0; cnt < FolderNodes.Length; cnt++)
                 {
                     if (Folder.Trim() == String.Empty)
                         continue;
-                    String folder_name = settings.GetSetting("LastLoadedFolders/" + Folder, String.Empty);
+                    String folder_name = settings.GetSetting(nodename + "/" + Folder, String.Empty);
                     if (folder_name.Trim() == String.Empty)
                         continue;
-                    //if (!Preferences.PathToOpen.Contains(folder_name))
-                    //    Preferences.PathToOpen.Add(folder_name);
-                    DirectoryInfo di = new DirectoryInfo(folder_name);
-                    if (Preferences.PathToOpen.Contains(di.FullName)) // if we already have this exact folder, skip it
-                    {
-                        continue;
-                    }
-                    else
-                    {
-                        Delete = false;
-                        Skip = false;
 
-                        for (int c = 0; c < Preferences.PathToOpen.Count; c++)
-                        {
-                            if (Preferences.PathToOpen[c].Contains(di.FullName + "\\"))
-                            {
-                                // if args[i] is a Parent Folder of an existing Path
-                                Preferences.PathToOpen[c] = "<x_ffxime_x> Delete Me";
-                                Delete = true;
-                            }
-                            else if (di.FullName.Contains(Preferences.PathToOpen[c] + "\\"))
-                            {
-                                Skip = true;
-                            }
-                        }
-                        if (Delete)
-                        {
-
-                            Preferences.PathToOpen.RemoveAll(FFXI_ME_v2_Program.Deleteable);
-                            //while (Preferences.PathToOpen.Contains("<x_ffxime_x> Delete Me"))
-                            //{
-                            //    Preferences.PathToOpen.Remove("<x_ffxime_x> Delete Me");
-                            //}
-
-                        }
-
-                        if (Skip)
-                            continue;
-
-                        Preferences.PathToOpen.Add(di.FullName);
-                    }
+                    Preferences.AddLocation(folder_name);
                 }
             }
             #endregion
@@ -3047,6 +3071,7 @@ namespace FFXI_ME_v2
             }
 
             settings.DeleteSetting("LastLoadedFolders");
+            settings.DeleteSetting("LastLoadedLocations");
 
             if (Preferences.PathToOpen.Count > 0)
             {
@@ -3054,8 +3079,8 @@ namespace FFXI_ME_v2
                 {
                     if (Preferences.PathToOpen[i].Trim() == String.Empty)
                         continue;
-                    String FolderName = String.Format("LastLoadedFolders/Folder{0:X4}", i); 
-                    settings.PutSetting(FolderName, Preferences.PathToOpen[i].Trim());
+
+                    settings.PutSetting(String.Format("LastLoadedLocations/Location{0:X4}", i), Preferences.PathToOpen[i].Trim());
                 }
             }
 
