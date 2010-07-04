@@ -10,9 +10,9 @@
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>Yekyaa.FFXIEncoding</RootNamespace>
     <AssemblyName>Yekyaa.FFXIEncoding</AssemblyName>
-    <TargetFrameworkVersion>v2.0</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
-    <ApplicationIcon>YekCelShaded.ico</ApplicationIcon>
+    <ApplicationIcon>FFXI_ME.ico</ApplicationIcon>
     <SignAssembly>true</SignAssembly>
     <AssemblyOriginatorKeyFile>yekyaa_ffxi_me.snk</AssemblyOriginatorKeyFile>
     <FileUpgradeFlags>
@@ -38,6 +38,7 @@
     <SccLocalPath>Svn</SccLocalPath>
     <SccAuxPath>Svn</SccAuxPath>
     <SccProvider>SubversionScc</SccProvider>
+    <TargetFrameworkProfile>Client</TargetFrameworkProfile>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -149,6 +150,7 @@
     <None Include="yekyaa_ffxi_me.snk" />
   </ItemGroup>
   <ItemGroup>
+    <Content Include="FFXI_ME.ico" />
     <Content Include="YekCelShaded.ico" />
   </ItemGroup>
   <ItemGroup>
