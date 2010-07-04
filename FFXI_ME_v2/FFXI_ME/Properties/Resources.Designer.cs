@@ -146,6 +146,13 @@ namespace FFXI_ME_v2.Properties {
             }
         }
         
+        internal static System.Drawing.Bitmap Csearch_00 {
+            get {
+                object obj = ResourceManager.GetObject("Csearch_00", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
         internal static System.Drawing.Bitmap CutHS {
             get {
                 object obj = ResourceManager.GetObject("CutHS", resourceCulture);
