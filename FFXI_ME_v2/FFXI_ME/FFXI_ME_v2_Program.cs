@@ -7,11 +7,14 @@ using System.Drawing;
 using System.Text;
 using System.Windows.Forms;
 using System.Security.Cryptography;
+using System.Threading;
 
 namespace FFXI_ME_v2
 {
     static class FFXI_ME_v2_Program
     {
+        static private Mutex m;
+
         public static bool Deleteable(String x)
         {
             if (x == "<x_ffxime_x> Delete Me")
@@ -25,6 +28,16 @@ namespace FFXI_ME_v2
         [STAThread]
         static void Main(string[] args)
         {
+            bool instantiated;
+
+            m = new Mutex(false, "Local\\" + "<x_ffxime_x> One Program At A Time!", out instantiated);
+
+            if (!instantiated)
+            {
+                MessageBox.Show("FFXI ME! is already running!", "I can't let you do that, Dave.", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
+                return;
+            }
+
             Preferences.PathToOpen.Clear();
             bool Delete = false, Skip = false;
 
