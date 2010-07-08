@@ -131,8 +131,9 @@ namespace FFXI_ME_v2
                 }
             }
 
-            public void Save()
+            public bool Save()
             {
+                bool Success = true;
                 // if filename is not empty
                 if (this._fName != String.Empty)
                 {
@@ -185,14 +186,18 @@ namespace FFXI_ME_v2
                     catch (PathTooLongException e)
                     {
                         LogMessage.LogF("... BookSave(): Saving {0} encountered an error -- {1}", this._fName, e.Message);
+                        Success = false;
                     }
                     catch (Exception e)
                     {
                         LogMessage.LogF("... BookSave(): Saving {0} encountered an unexpected error -- {1}", this._fName, e.Message);
+                        Success = false;
                     }
                     if (br_fi != null)
                         br_fi.Close();
                 }
+                else Success = false;
+                return Success;
             }
 
             public void CopyFrom(CBook cb)
@@ -914,24 +919,29 @@ namespace FFXI_ME_v2
                         pathtocreate += x + "\\";
                     pathtocreate = pathtocreate.Trim('\\');
                     LogMessage.Log("{0}: {1} not found, attempting to create.", e.Message, pathtocreate);
-                    Directory.CreateDirectory(pathtocreate);
                     try
                     {
+                        Directory.CreateDirectory(pathtocreate);
                         fs = File.Open(fileName, FileMode.Create, FileAccess.ReadWrite);
                         LogMessage.Log("..Success");
                     }
-                    catch
+                    catch (Exception ex)
                     {
                         fs = null;
-                        LogMessage.Log("..Failed, unable to save {0}", fileName);
+                        LogMessage.Log("..Failed, {0} & {1}", e.Message, ex.Message);
                     }
+                }
+                catch (Exception e)
+                {
+                    LogMessage.Log("Error: {0}", e.Message);
+                    return false;
                 }
                 BinaryWriter BR = null;
                 if (fs != null)
                     BR = new BinaryWriter(fs);
                 if (BR != null) // Write the header to the new file
                 {
-                    BR.Write((ulong)1); // Write the first eight bytes with 0x01 then 7 0x00's
+                    BR.Write((ulong)1); // Write the first of eight bytes with 0x01 then 7 0x00's
                     BR.Write(this.MD5Digest, 0, 16); // Write MD5 hash
                     BR.Write(data, 0, 7600);
                     BR.Close();

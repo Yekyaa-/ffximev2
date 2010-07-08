@@ -567,6 +567,7 @@ namespace Yekyaa.FFXIEncoding
             int step = SplashScreen.ComputeStep((int)en_d_msg.Header.EntryCount);
 
             // for each entry
+            //StreamWriter fi = File.CreateText("Abilities.txt");
             for (int i = 0; i < AbilityInfo.Length; i++)
             {
                 AbilityInfo[i] = new FFXIATPhrase();
@@ -584,7 +585,9 @@ namespace Yekyaa.FFXIEncoding
                     AbilityInfo[i].value = new String(en_d_msg.EntryList[i].data[0].ToCharArray());
                 else AbilityInfo[i].value = "<<UNKNOWN>>";
                 AbilityInfo[i].Language = (byte)language;
+                //fi.WriteLine("{0} {1}", i, AbilityInfo[i].value);
             }
+            //fi.Close();
         }
         private void LoadAbilityInfo()
         {
@@ -612,6 +615,7 @@ namespace Yekyaa.FFXIEncoding
             }
 
             int step = SplashScreen.ComputeStep(SpellInfo.Length > 0 ? SpellInfo.Length : 1);
+            //StreamWriter fi = File.CreateText("Spells.txt");
 
             for (int i = 0; i < SpellInfo.Length; i++)
             {
@@ -629,7 +633,9 @@ namespace Yekyaa.FFXIEncoding
                     SpellInfo[i].value = new String(en_d_msg.EntryList[i].data[0].ToCharArray());
                 else SpellInfo[i].value = "<<UNKNOWN>>";
                 SpellInfo[i].Language = (byte)language;
+                //fi.WriteLine("{0} {1}", i, SpellInfo[i].value);
             }
+            //fi.Close();
         }
         private void LoadSpellInfo()
         {
