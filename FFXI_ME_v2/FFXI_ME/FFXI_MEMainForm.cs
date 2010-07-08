@@ -576,8 +576,9 @@ namespace FFXI_ME_v2
                 CBook cb = ti.Object1 as CBook;
                 if (cb != null)
                 {
-                    cb.Save();
-                    LogMessage.LogF("...Saved book {0}", cb.fName);
+                    if (cb.Save())
+                        LogMessage.LogF("...Saved book {0}", cb.fName);
+                    else Error = true;
                 }
             }
             else if (ti.Type == "Delete_Folder")
@@ -1280,7 +1281,7 @@ namespace FFXI_ME_v2
             this.RestoreCursor();
         }
 
-        private void SaveAllMacroSets()
+        private void SaveAllMacroSets(bool Exit, bool ChangesOnly)
         {
             if (MacroFiles.Count < 1)
             {
@@ -8810,7 +8811,7 @@ namespace FFXI_ME_v2
 
         private void SaveAllMacroFilesMenuItem_Click(object sender, EventArgs e)
         {
-            SaveAllMacroSets();
+            SaveAllMacroSets(false, false);
         }
     }
 
