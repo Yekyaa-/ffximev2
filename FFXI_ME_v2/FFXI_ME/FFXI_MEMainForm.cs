@@ -1,20 +1,16 @@
 using System;
-using System.IO;
-using System.Threading;
 using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel;
-using System.Runtime.InteropServices;
-using System.Data;
 using System.Drawing;
-using System.Text;
-using System.Xml;
-using System.Windows.Forms;
-using System.Security.Cryptography;
+using System.IO;
 using System.Reflection;
+using System.Threading;
+using System.Windows.Forms;
+using System.Xml;
+using FFXI_ME_v2.Properties; // for easier access to Resources
 using Microsoft.Win32;
 using Yekyaa.FFXIEncoding;
-using FFXI_ME_v2.Properties; // for easier access to Resources
 
 namespace FFXI_ME_v2
 {
@@ -27,9 +23,14 @@ namespace FFXI_ME_v2
         #endregion
 
         #region MainForm Variables
-        static public bool ShowOptionsDialog = false;
-        // Tracks Changes of Renames and Deletes
+        private List<String> XMLToDo = new List<String>();
 
+        /// <summary>
+        /// Command-line option (-o, /o, -options, /options) given, just pop up the Options dialog box.
+        /// </summary>
+        static public bool ShowOptionsDialog = false;
+
+        // Tracks Changes of Renames and Deletes
         TagInfo[] NodeUpdatesToDo = new TagInfo[0];
         List<TagInfo> DeleteRenameChanges = new List<TagInfo>();
         List<CBook> BookList = new List<CBook>();
@@ -386,154 +387,13 @@ namespace FFXI_ME_v2
         private void MainForm_Closing(object sender, FormClosingEventArgs e)
         {
             LogMessage.LogF("Program Close requested...");
-            bool Error = false;
-            bool foundBook = false, foundFolder = false, foundFile = false;
-            int original_drc_length = DeleteRenameChanges.Count;
-            ExitAndSaveBox esb = new ExitAndSaveBox();
 
-            foreach (TagInfo t in DeleteRenameChanges)
+            if (SaveAllChanges(false, true).Cancel == true)
             {
-                if (t.Type == "Delete_Folder")
-                {
-                    foundFolder = true;
-                    break;
-                }
+                e.Cancel = true;
+                return;
             }
 
-            esb.selectFoldersOnlyToolStripMenuItem.Visible = foundFolder;
-
-            foreach (CBook cb in BookList)
-            {
-                if (cb.IsDeleted)
-                {
-                    if (File.Exists(cb.fName))
-                    {
-                        DeleteRenameChanges.Add(new TagInfo("Delete_File", cb.fName));
-                        foundBook = true;
-                    }
-                }
-                else if (cb.Changed)
-                {
-                    DeleteRenameChanges.Add(new TagInfo("Save_TTL", (Object)cb));
-                    foundBook = true;
-                }
-            }
-
-            esb.selectBooksOnlyToolStripMenuItem.Visible = foundBook;
-
-            foreach (CMacroFile x in MacroFiles)
-            {
-                if (x.IsDeleted)
-                {
-                    if (File.Exists(x.fName))
-                    {
-                        DeleteRenameChanges.Add(new TagInfo("Delete_File", x.fName));
-                        foundFile = true;
-                    }
-                }
-                else if (x.Changed == true)
-                {
-                    DeleteRenameChanges.Add(new TagInfo("Save_File", x));
-                    foundFile = true;
-                }
-            }
-
-            esb.selectMacroFilesOnlyToolStripMenuItem.Visible = foundFile;
-
-            esb.toolStripSeparator1.Visible = (foundFolder || foundFile || foundBook);
-
-            if (DeleteRenameChanges.Count > 1)
-            {
-                #region If there's more than 1 item to save, show CheckedListBox
-                esb.checkedListBox1.Items.Clear();
-                if (this.WindowState == FormWindowState.Minimized)
-                    esb.StartPosition = FormStartPosition.CenterScreen;
-
-                foreach (TagInfo tiLoop in DeleteRenameChanges)
-                {
-                    #region for each item in the DRC array, add it to the CheckedListBox
-                    if (tiLoop.Type != "Skip")
-                    {
-                        // don't add Deletion of Folders or Files
-                        // if the directory doesn't exist
-                        // Files should be handled above, but I may not have
-                        // counted on some old code lying around somewhere.
-                        if ((tiLoop.Type == "Delete_Folder") &&
-                            !Directory.Exists(tiLoop.Text))
-                            continue;
-                        else if ((tiLoop.Text == "Delete_File") &&
-                            !File.Exists(tiLoop.Text))
-                            continue;
-                        esb.checkedListBox1.Items.Add(tiLoop, true);
-                    }
-                    #endregion
-                }
-
-                DialogResult dr;
-                LogMessage.LogF("..Save All Changes Requested");
-                exitLoop = false;
-                while (exitLoop == false)
-                {
-                    dr = esb.ShowDialog();
-                    exitLoop = true;
-                    if (dr == DialogResult.Cancel)
-                    {
-                        e.Cancel = true;
-                        LogMessage.LogF("...Exit & Save cancelled");
-                        // Remove the newly added Files that need to be saved.
-                        DeleteRenameChanges.RemoveRange(original_drc_length, DeleteRenameChanges.Count - original_drc_length);
-                        return;
-                    }
-                    else if (dr == DialogResult.Yes)
-                    {
-                        #region If we choose to Save
-                        if (esb.checkedListBox1.CheckedItems.Count > 0)
-                        {
-                            foreach (object x in esb.checkedListBox1.CheckedItems)
-                            {
-                                Error = SaveTagInfo(x as TagInfo);
-                            }
-                            LogMessage.LogF("...Save All Changes Completed {0}.", (Error == true) ? "With Errors" : "Successfully.");
-                        }
-                        else
-                        {
-                            exitLoop = false;
-                            MessageBox.Show("You need to pick something if you want to Save & Exit!", "Select 'Just Exit' or 'Cancel!' instead.");
-                        }
-                        #endregion
-                    }
-                    else
-                    {
-                        LogMessage.LogF("...Save All Declined, Exiting.");
-                    }
-                }
-                #endregion
-            }
-            else if (DeleteRenameChanges.Count == 1)
-            {
-                #region If there's exactly one item, use a MessageBox instead
-                DialogResult dr = MessageBox.Show(DeleteRenameChanges[0].ToString(), "Save before exiting?", MessageBoxButtons.YesNoCancel, MessageBoxIcon.None, MessageBoxDefaultButton.Button2);
-                if (dr == DialogResult.Cancel)
-                {
-                    #region Cancel the close, reset the Changes array, and return
-                    e.Cancel = true;
-                    LogMessage.LogF("...Exit & Save cancelled");
-                    // Remove the newly added Files that need to be saved.
-                    DeleteRenameChanges.RemoveRange(original_drc_length, DeleteRenameChanges.Count - original_drc_length);
-                    return;
-                    #endregion
-                }
-                else if (dr == DialogResult.Yes)
-                {
-                    Error = SaveTagInfo(DeleteRenameChanges[0]);
-                    LogMessage.LogF("...Save All Changes Completed {0}.", (Error == true) ? "With Errors" : "Successfully.");
-                }
-                else
-                {
-                    LogMessage.LogF("...Save All Declined, Exiting.");
-                }
-                #endregion
-            }
             notifyIcon.Visible = false;
             LogMessage.LogF("..Saving Preferences...");
             SavePreferences();
@@ -555,19 +415,30 @@ namespace FFXI_ME_v2
 
         private bool SaveTagInfo(TagInfo ti)
         {
-            bool Error = false;
+            bool Error = true;
             #region Save the one item there is, based on Type
+            Random rand = new Random();
+
             if (ti.Type == "Save_File")
             {
                 #region Saving a regular Macro File
                 CMacroFile cmf = ti.Object1 as CMacroFile;
                 if ((cmf != null) && (cmf.Changed == true))
                 {
-                    if (cmf.Save() != true)
+                    if (!cmf.Save())
                     {
-                        LogMessage.LogF("...Error while saving {0}, skipping.", cmf.fName);
-                        Error = true;
+                        String s;
+                        do
+                        {
+                            s = String.Format("{0}\\mcr0x{1:X}.dat", Preferences.TasksDirectory, rand.Next(1, Int32.MaxValue));
+                        } while (File.Exists(s));
+
+                        if (cmf.Save(s))
+                            XMLToDo.Add(String.Format("<copyfile deletesource=\"true\" source=\"{0}\" dest=\"{1}\" />", s, cmf.fName));
+                        else
+                            LogMessage.LogF("...Error while saving {0}, skipping.", cmf.fName);
                     }
+                    else Error = false;
                 }
                 #endregion
             }
@@ -577,24 +448,55 @@ namespace FFXI_ME_v2
                 if (cb != null)
                 {
                     if (cb.Save())
+                    {
+                        String s;
+                        do
+                        {
+                            s = String.Format("{0}\\mcr0x{1:X}.ttl", Preferences.TasksDirectory, rand.Next(1, Int32.MaxValue));
+                        } while (File.Exists(s));
+                        if (!cb.Save(s))
+                            XMLToDo.Add(String.Format("<copyfile deletesource=\"true\" source=\"{0}\" dest=\"{1}\" />", s, cb.fName));
+                        else
+                            LogMessage.LogF("...Error while saving {0}, skipping.", cb.fName);
+                    }
+                    else
+                    {
                         LogMessage.LogF("...Saved book {0}", cb.fName);
-                    else Error = true;
-                }
-            }
-            else if (ti.Type == "Delete_Folder")
-            {
-                if (Directory.Exists(ti.Text))
-                {
-                    Directory.Delete(ti.Text, true);
-                    LogMessage.LogF("...Removed directory {0} and all sub-directories and files.", ti.Text);
+                        Error = false;
+                    }
                 }
             }
             else if (ti.Type == "Delete_File")
             {
                 if (File.Exists(ti.Text))
                 {
-                    File.Delete(ti.Text);
-                    LogMessage.LogF("...Deleted File {0}", ti.Text);
+                    try
+                    {
+                        File.Delete(ti.Text);
+                        LogMessage.LogF("...Deleted File {0}", ti.Text);
+                        Error = false;
+                    }
+                    catch
+                    {
+                        XMLToDo.Add(String.Format("<deletefile>{0}</deletefile>", ti.Text));
+                    }
+                }
+            }
+            else if (ti.Type == "Delete_Folder")
+            {
+                if (Directory.Exists(ti.Text))
+                {
+                    try
+                    {
+                        Directory.Delete(ti.Text, true);
+                        LogMessage.LogF("...Removed directory {0} and all sub-directories and files.", ti.Text);
+                        Error = false;
+                    }
+                    catch
+                    {
+                        XMLToDo.Add(String.Format("<deletefolder>{0}</deletefolder>", ti.Text));
+                        Error = true;
+                    }
                 }
             }
             #endregion
@@ -1257,8 +1159,13 @@ namespace FFXI_ME_v2
         #region File/Save Submenu Items (also includes the SaveAllChanges() function
         private void saveCurrentToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            CMacroFile cmf = FindMacroFileByNode(treeView.SelectedNode);
-            CMacro cm = FindMacroByNode(treeView.SelectedNode);
+            SaveSingleMacroFile(treeView.SelectedNode);
+        }
+
+        private void SaveSingleMacroFile(TreeNode node)
+        {
+            CMacroFile cmf = FindMacroFileByNode(node);
+            CMacro cm = FindMacroByNode(node);
 
             this.SetWaitCursor();
 
@@ -1270,203 +1177,113 @@ namespace FFXI_ME_v2
 
             if (cmf != null)
             {
-                if (cmf.Save() == true)
+
+                if (!SaveTagInfo(new TagInfo("Save_File", cmf as Object)))
                 {
                     MessageBox.Show(cmf.fName + " saved successfully.", "You have been Saved!");
                 }
-                else MessageBox.Show(cmf.fName + " could NOT be saved!", "Error while saving");
+                else if (XMLToDo.Count > 0)
+                {
+                    if (ProcessXMLToDo())
+                    {
+                        MessageBox.Show(cmf.fName + " could NOT be saved!", "Error while saving");
+                        LogMessage.Log("SaveCurrent: Unable to save {0} after 2 tries", cmf.fName);
+                    }
+                    else MessageBox.Show(cmf.fName + " saved successfully.", "You have been Saved!");
+                }
             }
             else MessageBox.Show("You must select a folder or file first in order to Save!", "Error while saving");
 
             this.RestoreCursor();
         }
 
-        private void SaveAllMacroSets(bool Exit, bool ChangesOnly)
+        private FormClosingEventArgs SaveAllChanges(bool FilesOnly, bool Exiting)
         {
             if (MacroFiles.Count < 1)
             {
-                MessageBox.Show("You must open a folder or file first in order to Save All!", "Error while saving");
-                return;
+                MessageBox.Show("You must open a folder or file first in order to save anything at all!", "Nothing to save.");
+                return new FormClosingEventArgs(CloseReason.None, false);
             }
-            ExitAndSaveBox esb = new ExitAndSaveBox("Save which Macro Files?", "Select which files to save:", "Save!", String.Empty, "Forget It!");
+
+            ExitAndSaveBox esb;
+            if (!Exiting)
+                esb = new ExitAndSaveBox(
+                String.Format("Save which {0}?", FilesOnly ? "macro files" : "changes"),
+                String.Format("Select which {0} to save:", FilesOnly ? "files" : "changes"), "Save!", String.Empty, "Forget It!");
+            else esb = new ExitAndSaveBox();
+
             this.SetWaitCursor();
-            bool Error = false;
-            int original_drc_length = DeleteRenameChanges.Count;
-            TagInfo[] original = DeleteRenameChanges.ToArray();
-
-            DeleteRenameChanges.Clear();
-
-            esb.selectFoldersOnlyToolStripMenuItem.Visible = false;
-
-            esb.selectBooksOnlyToolStripMenuItem.Visible = false;
-
-            foreach (CMacroFile x in MacroFiles)
-            {
-                if (x.IsDeleted)
-                {
-                    if (File.Exists(x.fName))
-                    {
-                        DeleteRenameChanges.Add(new TagInfo("Delete_File", x.fName));
-                    }
-                }
-                else if (x.Changed == true)
-                {
-                    DeleteRenameChanges.Add(new TagInfo("Save_File", x));
-                }
-            }
-
-            esb.selectMacroFilesOnlyToolStripMenuItem.Visible = false;
-
-            esb.toolStripSeparator1.Visible = false;
-
-            if (DeleteRenameChanges.Count > 1)
-            {
-                #region If there's more than 1 item to save, show CheckedListBox
-                esb.checkedListBox1.Items.Clear();
-                if (this.WindowState == FormWindowState.Minimized)
-                    esb.StartPosition = FormStartPosition.CenterScreen;
-
-                foreach (TagInfo tiLoop in DeleteRenameChanges)
-                {
-                    #region for each item in the DRC array, add it to the CheckedListBox
-                    if (tiLoop.Type != "Skip")
-                    {
-                        // don't add Deletion of Folders or Files
-                        // if the directory doesn't exist
-                        // Files should be handled above, but I may not have
-                        // counted on some old code lying around somewhere.
-                        if ((tiLoop.Type == "Delete_Folder") &&
-                            !Directory.Exists(tiLoop.Text))
-                            continue;
-                        else if ((tiLoop.Text == "Delete_File") &&
-                            !File.Exists(tiLoop.Text))
-                            continue;
-                        esb.checkedListBox1.Items.Add(tiLoop, true);
-                    }
-                    #endregion
-                }
-
-                DialogResult dr;
-                LogMessage.LogF("..Save All Changes Requested");
-                exitLoop = false;
-                while (exitLoop == false)
-                {
-                    dr = esb.ShowDialog();
-                    exitLoop = true;
-                    if (dr == DialogResult.Cancel)
-                    {
-                        LogMessage.LogF("...Exit & Save cancelled");
-                        // Remove the newly added Files that need to be saved.
-                        DeleteRenameChanges.Clear();
-                        for (int xi = 0; xi < original.Length; xi++)
-                            DeleteRenameChanges.Add(original[xi]);
-                        this.RestoreCursor();
-                        return;
-                    }
-                    else if (dr == DialogResult.Yes)
-                    {
-                        #region If we choose to Save
-                        if (esb.checkedListBox1.CheckedItems.Count > 0)
-                        {
-                            foreach (object x in esb.checkedListBox1.CheckedItems)
-                            {
-                                Error = SaveTagInfo(x as TagInfo);
-                            }
-                            LogMessage.LogF("...Save All Changes Completed {0}.", (Error == true) ? "With Errors" : "Successfully.");
-                        }
-                        else
-                        {
-                            exitLoop = false;
-                            MessageBox.Show("You need to pick something if you want to Save & Exit!", "Select 'Just Exit' or 'Cancel!' instead.");
-                        }
-                        #endregion
-                    }
-                    else
-                    {
-                        LogMessage.LogF("...Save All Declined, Exiting.");
-                    }
-                }
-                #endregion
-            }
-            else if (DeleteRenameChanges.Count == 1)
-            {
-                #region If there's exactly one item, use a MessageBox instead
-                DialogResult dr = MessageBox.Show(DeleteRenameChanges[0].ToString(), "Save before exiting?", MessageBoxButtons.YesNoCancel, MessageBoxIcon.None, MessageBoxDefaultButton.Button2);
-                if (dr == DialogResult.Cancel)
-                {
-                    #region Cancel the close, reset the Changes array, and return
-                    LogMessage.LogF("...Exit & Save cancelled");
-                    // Remove the newly added Files that need to be saved.
-                    DeleteRenameChanges.Clear();
-                    for (int xi = 0; xi < original.Length; xi++)
-                        DeleteRenameChanges.Add(original[xi]);
-                    this.RestoreCursor();
-                    return;
-                    #endregion
-                }
-                else if (dr == DialogResult.Yes)
-                {
-                    Error = SaveTagInfo(DeleteRenameChanges[0]);
-                    LogMessage.LogF("...Save All Changes Completed {0}.", (Error == true) ? "With Errors" : "Successfully.");
-                }
-                else
-                {
-                    LogMessage.LogF("...Save All Declined, Exiting.");
-                }
-                #endregion
-            }
-            else if (DeleteRenameChanges.Count == 0)
-            {
-                MessageBox.Show("No Macrofiles need saving.", "No files to save.");
-            }
-            this.RestoreCursor();
-            DeleteRenameChanges.Clear();
-            for (int xi = 0; xi < original.Length; xi++)
-                DeleteRenameChanges.Add(original[xi]);
-        }
-
-        private void SaveAllChanges()
-        {
-            if (MacroFiles.Count < 1)
-            {
-                MessageBox.Show("You must open a folder or file first in order to Save All!", "Error while saving");
-                return;
-            }
-            ExitAndSaveBox esb = new ExitAndSaveBox("Save which changes?", "Select which changes to save:", "Save!", String.Empty, "Forget It!");
-            this.SetWaitCursor();
-            bool Error = false;
+            bool Error = false, OnlyOneChange = false;
             bool foundBook = false, foundFolder = false, foundFile = false;
             int original_drc_length = DeleteRenameChanges.Count;
+            TagInfo[] original;
 
-            foreach (TagInfo t in DeleteRenameChanges)
+            original = DeleteRenameChanges.ToArray();
+
+            DeleteRenameChanges.Clear();
+            // Folder deletes are assigned by system, keep them.
+            // Prune anything else, because we'll rebuild it here.
+            for (int i = 0; i < original.Length; i++)
             {
+                TagInfo t = original[i];
                 if (t.Type == "Delete_Folder")
                 {
                     foundFolder = true;
-                    break;
+                    DeleteRenameChanges.Add(t);
                 }
             }
+            // reassign the array b/c it's goign to replace itself in the even that it's FilesOnly or we cancel.
+            original = DeleteRenameChanges.ToArray();
 
-            esb.selectFoldersOnlyToolStripMenuItem.Visible = foundFolder;
-
-            foreach (CBook cb in BookList)
+            if (!FilesOnly)
             {
-                if (cb.IsDeleted)
+                esb.selectFoldersOnlyToolStripMenuItem.Visible = foundFolder;
+
+                foreach (CBook cb in BookList)
                 {
-                    if (File.Exists(cb.fName))
+                    if (cb.IsDeleted)
                     {
-                        DeleteRenameChanges.Add(new TagInfo("Delete_File", cb.fName));
+                        if (File.Exists(cb.fName))
+                        {
+                            bool foundExistingBook = false;
+                            foreach (TagInfo drcTemp in DeleteRenameChanges)
+                            {
+                                if ((drcTemp.Type == "Delete_File") && (drcTemp.Text == cb.fName))
+                                {
+                                    foundExistingBook = true; // is already in the list to be deleted, don't duplicate it.
+                                    break;
+                                }
+                            }
+                            if (!foundExistingBook) // not already in the list marked for deletion
+                                DeleteRenameChanges.Add(new TagInfo("Delete_File", cb.fName));
+                            foundBook = true;
+                        }
+                    }
+                    else if (cb.Changed)
+                    {
+                        bool foundExistingBook = false;
+                        foreach (TagInfo drcTemp in DeleteRenameChanges)
+                        {
+                            if ((drcTemp.Type == "Save_TTL") && (cb == drcTemp.Object1))
+                            {
+                                foundExistingBook = true;
+                                break;
+                            }
+                        }
+                        if (!foundExistingBook)
+                            DeleteRenameChanges.Add(new TagInfo("Save_TTL", (Object)cb));
                         foundBook = true;
                     }
                 }
-                else if (cb.Changed)
-                {
-                    DeleteRenameChanges.Add(new TagInfo("Save_TTL", (Object)cb));
-                    foundBook = true;
-                }
-            }
 
-            esb.selectBooksOnlyToolStripMenuItem.Visible = foundBook;
+                esb.selectBooksOnlyToolStripMenuItem.Visible = foundBook;
+            }
+            else
+            {
+                esb.selectMacroFilesOnlyToolStripMenuItem.Visible = false;
+                esb.toolStripSeparator1.Visible = false;
+                DeleteRenameChanges.Clear();
+            }
 
             foreach (CMacroFile x in MacroFiles)
             {
@@ -1485,109 +1302,226 @@ namespace FFXI_ME_v2
                 }
             }
 
-            esb.selectMacroFilesOnlyToolStripMenuItem.Visible = foundFile;
+            if (!FilesOnly)
+            {
+                esb.selectMacroFilesOnlyToolStripMenuItem.Visible = foundFile;
+                esb.toolStripSeparator1.Visible = (foundFolder || foundFile || foundBook);
+            }
+            else
+            {
+                esb.selectMacroFilesOnlyToolStripMenuItem.Visible = false;
+                esb.toolStripSeparator1.Visible = false;
+            }
 
-            esb.toolStripSeparator1.Visible = (foundFolder || foundFile || foundBook);
+            if (DeleteRenameChanges.Count == 1)
+            {
+                OnlyOneChange = true;
+                if (DeleteRenameChanges[0].Type == "Skip")
+                    DeleteRenameChanges.Clear();
+            }
 
-            if (DeleteRenameChanges.Count > 1)
+            if (DeleteRenameChanges.Count >= 1)
             {
                 #region If there's more than 1 item to save, show CheckedListBox
-                esb.checkedListBox1.Items.Clear();
-                if (this.WindowState == FormWindowState.Minimized)
-                    esb.StartPosition = FormStartPosition.CenterScreen;
+                DialogResult dr;
 
-                foreach (TagInfo tiLoop in DeleteRenameChanges)
+                if (!OnlyOneChange)
                 {
-                    #region for each item in the DRC array, add it to the CheckedListBox
-                    if (tiLoop.Type != "Skip")
+                    esb.checkedListBox1.Items.Clear();
+                    if (this.WindowState == FormWindowState.Minimized)
+                        esb.StartPosition = FormStartPosition.CenterScreen;
+
+                    foreach (TagInfo tiLoop in DeleteRenameChanges)
                     {
-                        // don't add Deletion of Folders or Files
-                        // if the directory doesn't exist
-                        // Files should be handled above, but I may not have
-                        // counted on some old code lying around somewhere.
-                        if ((tiLoop.Type == "Delete_Folder") &&
-                            !Directory.Exists(tiLoop.Text))
-                            continue;
-                        else if ((tiLoop.Text == "Delete_File") &&
-                            !File.Exists(tiLoop.Text))
-                            continue;
-                        esb.checkedListBox1.Items.Add(tiLoop, true);
+                        #region for each item in the DRC array, add it to the CheckedListBox
+                        if (tiLoop.Type != "Skip")
+                        {
+                            // don't add Deletion of Folders or Files
+                            // if the directory doesn't exist
+                            // Files should be handled above, but I may not have
+                            // counted on some old code lying around somewhere.
+                            if ((tiLoop.Type == "Delete_Folder") &&
+                                !Directory.Exists(tiLoop.Text))
+                                continue;
+                            else if ((tiLoop.Text == "Delete_File") &&
+                                !File.Exists(tiLoop.Text))
+                                continue;
+                            esb.checkedListBox1.Items.Add(tiLoop, true);
+                        }
+                        #endregion
                     }
-                    #endregion
+
+                    LogMessage.LogF("..Save All {0} Requested", FilesOnly ? "Files" : "Changes");
                 }
 
-                DialogResult dr;
-                LogMessage.LogF("..Save All Changes Requested");
                 exitLoop = false;
+
                 while (exitLoop == false)
                 {
-                    dr = esb.ShowDialog();
+                    if (!OnlyOneChange)
+                        dr = esb.ShowDialog();
+                    else
+                    {
+                        dr = MessageBox.Show(DeleteRenameChanges[0].ToString(),
+                                String.Format("Save {0}{1}?", FilesOnly ? "file" : "change", Exiting ? " before exiting" : ""), 
+                                Exiting ? MessageBoxButtons.YesNoCancel : MessageBoxButtons.YesNo, 
+                                MessageBoxIcon.None, 
+                                Exiting ? MessageBoxDefaultButton.Button3 : MessageBoxDefaultButton.Button2);
+                    }
                     exitLoop = true;
                     if (dr == DialogResult.Cancel)
                     {
-                        LogMessage.LogF("...Exit & Save cancelled");
+                        LogMessage.LogF("...Save{0}{1} cancelled", (!OnlyOneChange && FilesOnly) ? " All Files" : (!OnlyOneChange && !FilesOnly) ? " All Changes" : "", Exiting ? " & Exit" : "");
+
                         // Remove the newly added Files that need to be saved.
-                        DeleteRenameChanges.RemoveRange(original_drc_length, DeleteRenameChanges.Count - original_drc_length);
+                        if (FilesOnly)
+                        {
+                            // in FilesOnly case we build our own DRC list, restore original
+                            DeleteRenameChanges.Clear();
+                            for (int xi = 0; xi < original.Length; xi++)
+                                DeleteRenameChanges.Add(original[xi]);
+                        }
+                        else
+                        {
+                            if (OnlyOneChange)
+                                DeleteRenameChanges.Clear();
+                            else DeleteRenameChanges.RemoveRange(original_drc_length, DeleteRenameChanges.Count - original_drc_length);
+                        }
                         this.RestoreCursor();
-                        return;
+                        return new FormClosingEventArgs(CloseReason.None, true);
                     }
                     else if (dr == DialogResult.Yes)
                     {
                         #region If we choose to Save
-                        if (esb.checkedListBox1.CheckedItems.Count > 0)
+                        if (!OnlyOneChange && (esb.checkedListBox1.CheckedItems.Count <= 0))
+                        {
+                            exitLoop = false;
+                            MessageBox.Show(String.Format("You need to pick something if you want to Save {0}{1}!", (FilesOnly) ? "All Files" : "All Changes", (Exiting) ? " & Exit" : ""),
+                                String.Format("Select {0} instead.", (Exiting) ? "'Just Exit' or 'Cancel!'" : "Forget It!"));
+                            continue;
+                        }
+
+                        if (OnlyOneChange)
+                        {
+                            Error = SaveTagInfo(DeleteRenameChanges[0]);
+                            if (!Error)
+                            {
+                                DeleteRenameChanges.Clear();
+                            }
+                        }
+                        else if (!OnlyOneChange && (esb.checkedListBox1.CheckedItems.Count > 0))
                         {
                             foreach (object x in esb.checkedListBox1.CheckedItems)
                             {
                                 Error = SaveTagInfo(x as TagInfo);
+                                if (!Error && DeleteRenameChanges.Contains(x as TagInfo))
+                                {
+                                    DeleteRenameChanges.Remove(x as TagInfo);
+                                }
                             }
-                            LogMessage.LogF("...Save All Changes Completed {0}.", (Error == true) ? "With Errors" : "Successfully.");
                         }
-                        else
+
+                        if (Error && XMLToDo.Count > 1)
                         {
-                            exitLoop = false;
-                            MessageBox.Show("You need to pick something if you want to Save & Exit!", "Select 'Just Exit' or 'Cancel!' instead.");
+                            Error = ProcessXMLToDo();
                         }
+                        LogMessage.LogF("...Save{0} Completed {1}{2}.", (!OnlyOneChange && FilesOnly) ? " All Files" : (!OnlyOneChange && !FilesOnly) ?  " All Changes" : "", 
+                                        (Error == true) ? "With Errors" : "Successfully.", Exiting ? ", Exiting" : "");
+                    }
                         #endregion
+                    else
+                    {
+                        LogMessage.LogF("...Save{0} Declined{1}.", (!OnlyOneChange && FilesOnly) ? " All Files" : (!OnlyOneChange && !FilesOnly) ? " All Changes" : "", (Exiting) ? ", Exiting" : "");
+                    }
+                }
+                #endregion
+            }
+            else if (DeleteRenameChanges.Count == 0)
+            {
+                String Message = String.Format("No {0} need saving{1}.", FilesOnly ? "Macrofiles" : "Changes", Exiting ? ", exiting" : "");
+                if (!Exiting)
+                    MessageBox.Show(Message, String.Format("No {0} to save.", FilesOnly ? "files" : "changes"));
+                LogMessage.Log(Message);
+            }
+            this.RestoreCursor();
+            if (FilesOnly) // If Only files, restore previous not done stuff (books, delete folders, create folders/files, etc)
+            {
+                DeleteRenameChanges.Clear(); // Clear my additions.
+                for (int xi = 0; xi < original.Length; xi++)
+                    DeleteRenameChanges.Add(original[xi]);  // Restore deleted/skipped folders
+            }
+            return new FormClosingEventArgs(CloseReason.None, false);
+        }
+
+        private bool ProcessXMLToDo()
+        {
+            bool Error = true;
+            #region If we were unable to make certain changes due to Access Restrictions or unknown events
+            try
+            {
+                Random rand = new Random();
+                String xmlname = String.Empty;
+
+                StreamWriter fi;
+                try
+                {
+                    if (!Directory.Exists(Preferences.TasksDirectory))
+                        Directory.CreateDirectory(Preferences.TasksDirectory);
+
+                    //Generate unique name for the tasks file
+                    do { xmlname = String.Format("{0}\\task{1:x}.xml", Preferences.TasksDirectory, rand.Next(1, Int32.MaxValue)); } while (File.Exists(xmlname));
+
+                    fi = File.CreateText(xmlname);
+                }
+                catch (Exception ex)
+                { LogMessage.LogF("Unable to create Tasks file or directory: {0}", ex.Message); fi = null; }
+
+                if (fi != null)
+                {
+                    fi.WriteLine("<filelist deletexml=\"true\">"); // add deletexml=\"true\" to delete xml when done
+                    foreach (String todo in XMLToDo)
+                    {
+                        fi.WriteLine(todo);
+                    }
+                    fi.WriteLine("</filelist>");
+                    fi.Close();
+                    if (File.Exists("AdminMacroWriter.exe"))
+                    {
+                        System.Diagnostics.ProcessStartInfo psi = new System.Diagnostics.ProcessStartInfo("AdminMacroWriter.exe", String.Format("\"{0}\"{1}", xmlname, Preferences.ShowDebugInfo ? " /debug" : ""));
+                        if (psi != null)
+                        {
+                            psi.Verb = "runas";
+                            psi.CreateNoWindow = true;
+                            psi.ErrorDialog = true;
+                            psi.WindowStyle = System.Diagnostics.ProcessWindowStyle.Hidden;
+                            System.Diagnostics.Process.Start(psi);
+                            Error = false;
+                        }
                     }
                     else
                     {
-                        LogMessage.LogF("...Save All Declined, Exiting.");
+                        LogMessage.Log("AdminMacroWriter.exe not present, unable to save files to restricted directories!");
+                        MessageBox.Show("AdminMacroWriter.exe is not present, I'm unable to save files to restricted directories.", "Helper file not present!");
+                    }
+
+                    if (File.Exists(xmlname))
+                    {
+                        Error = true; // deletexml is true, but file wasn't deleted, something went wrong
                     }
                 }
-                #endregion
+                else Error = true;
             }
-            else if (DeleteRenameChanges.Count == 1)
+            catch
             {
-                #region If there's exactly one item, use a MessageBox instead
-                DialogResult dr = MessageBox.Show(DeleteRenameChanges[0].ToString(), "Save before exiting?", MessageBoxButtons.YesNoCancel, MessageBoxIcon.None, MessageBoxDefaultButton.Button2);
-                if (dr == DialogResult.Cancel)
-                {
-                    #region Cancel the close, reset the Changes array, and return
-                    LogMessage.LogF("...Exit & Save cancelled");
-                    // Remove the newly added Files that need to be saved.
-                    DeleteRenameChanges.RemoveRange(original_drc_length, DeleteRenameChanges.Count - original_drc_length);
-                    this.RestoreCursor();
-                    return;
-                    #endregion
-                }
-                else if (dr == DialogResult.Yes)
-                {
-                    Error = SaveTagInfo(DeleteRenameChanges[0]);
-                    LogMessage.LogF("...Save All Changes Completed {0}.", (Error == true) ? "With Errors" : "Successfully.");
-                }
-                else
-                {
-                    LogMessage.LogF("...Save All Declined, Exiting.");
-                }
-                #endregion
+                Error = true;
             }
-
-            this.RestoreCursor();
+            #endregion
+            return Error;
         }
 
         private void saveAllToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            SaveAllChanges();
+            SaveAllChanges(false, false);
         }
         #endregion
         #region File/Exit Submenu Items
@@ -1938,7 +1872,83 @@ namespace FFXI_ME_v2
         }
         #endregion
 
-        #region MainForm Methods (OpenFolderMethod() overloads)
+        #region MainForm Methods (OpenFolderMethod() overloads, AddLocation())
+        private bool AddFileToTreeNode(String file)
+        {
+
+            if (!File.Exists(file))
+                return false;
+
+            if (FindMacroFileExactByFileName(file) != null)
+            {
+                return false;
+            }
+
+            if (IsMacroFile(file))
+            {
+                String newpath = String.Empty;
+                bool foundNode = false;
+                foreach (TreeNode tN in this.treeView.Nodes)
+                {
+                    TagInfo tI = tN.Tag as TagInfo;
+                    if (file.Contains(tI.Text)) // file is under this directory
+                    {
+                        foundNode = true;
+                        break;
+                    }
+                }
+                if (foundNode)
+                {
+                    NewFileInMemory(file);
+                }
+                else
+                {
+
+                }
+            }
+
+            return false;
+        }
+        private bool AddLocations(String[] location)
+        {
+
+            String lowerloc = String.Empty;
+
+            this.treeView.BeginUpdate();
+
+            if (recurse_form != null)
+            {
+                LogMessage.Log("Recursing Subdirectory form is still assigned to, Invoking Close, reassigning");
+
+                try
+                {
+                    recurse_form.Invoke(new RecurseCloseHandler(recurse_form.Close));
+                }
+                catch (Exception ex)
+                {
+                    LogMessage.Log("Invoke failed: {0}", ex.Message); //return false;// (System.ObjectDisposedException) && (System.InvalidOperationException)  TRY TO CONTINUE
+                }
+            }
+
+            recurse_form = new RecursingSubDirs();
+
+            foreach (String data in location)
+            {
+                if (File.Exists(data))
+                { // easy peezy
+                    if (AddFileToTreeNode(data))
+                        LogMessage.Log("AddLocation: Added file to treeView");
+                    else LogMessage.Log("AddLocation: Location exists '{0}', skipping.", data);
+                }
+                else if (Directory.Exists(data))
+                {
+                }
+            }
+
+            this.treeView.EndUpdate();
+            return true;
+        }
+
         private void OpenFolderMethod()
         {
             bool loop = true;
@@ -2102,11 +2112,11 @@ namespace FFXI_ME_v2
                     //for (int i = 0; i < tempfileList.Count; i++)
                     {
                         // LOAD TEMPLATES HERE
-                        //if (File.Exists(tempfileList[i]) && IsMacroFile(tempfileList[i]))
-                        //{
-                        //    MacroFiles.Add(new CMacroFile(tempfileList[i], this.ATPhraseLoader));
-                        //}
-                        MacroFiles.Add(new CMacroFile(tempfn, this.ATPhraseLoader));
+                        if (File.Exists(tempfn) && IsMacroFile(tempfn))
+                        {
+                            MacroFiles.Add(new CMacroFile(tempfn, this.ATPhraseLoader));
+                        }
+                        //MacroFiles.Add(new CMacroFile(tempfn, this.ATPhraseLoader));
                     }
                 }
                 LogMessage.Log("..Building TreeView Nodes from file lists");
@@ -2801,31 +2811,38 @@ namespace FFXI_ME_v2
         private void timer_Tick(object sender, EventArgs e)
         {
             // get node at mouse position
-            Point ptcmp = this.treeView.PointToClient(Control.MousePosition);
-            TreeNode node = this.treeView.GetNodeAt(ptcmp);
-
-            if (node != null)
+            try
             {
-                // if HoverNode hasn't been set yet
-                // or if node is not the same, set new HoverNode and start
-                // Timer Interval back over.
-                if ((this.HoverNode == null) || (node != this.HoverNode))
-                {
-                    this.HoverNode = node; // start interval now
-                    this.interval = 0;
-                    return;
-                }
-                else if (this.interval <= 4) // node is still the same as HoverNode, but interval is not 1250
-                {
-                    this.interval++;
-                    return;
-                }
+                Point ptcmp = this.treeView.PointToClient(Control.MousePosition);
+                TreeNode node = this.treeView.GetNodeAt(ptcmp);
 
-                DragHelper.ImageList_DragShowNolock(false);
-                this.interval = 0; // start interval over
-                this.HoverNode.Expand(); // expand the correct node
-                this.HoverNode = null;
-                DragHelper.ImageList_DragShowNolock(true);
+                if (node != null)
+                {
+                    // if HoverNode hasn't been set yet
+                    // or if node is not the same, set new HoverNode and start
+                    // Timer Interval back over.
+                    if ((this.HoverNode == null) || (node != this.HoverNode))
+                    {
+                        this.HoverNode = node; // start interval now
+                        this.interval = 0;
+                        return;
+                    }
+                    else if (this.interval <= 4) // node is still the same as HoverNode, but interval is not 1250
+                    {
+                        this.interval++;
+                        return;
+                    }
+
+                    DragHelper.ImageList_DragShowNolock(false);
+                    this.interval = 0; // start interval over
+                    this.HoverNode.Expand(); // expand the correct node
+                    this.HoverNode = null;
+                    DragHelper.ImageList_DragShowNolock(true);
+                }
+            }
+            catch (Exception ex)
+            {
+                LogMessage.Log("timer_Tick: " + ex.Message);
             }
         }
 
@@ -2857,7 +2874,7 @@ namespace FFXI_ME_v2
                 {
                     if (!Directory.Exists(Preferences.AppMyDocsFolderName))
                         Directory.CreateDirectory(Preferences.AppMyDocsFolderName);
-                    if (File.Exists("settings.xml"))
+                    if (File.Exists("settings.xml") && !File.Exists(Preferences.SettingsXMLFile))
                     {
                         File.Copy("settings.xml", Preferences.SettingsXMLFile);
                     }
@@ -3137,7 +3154,17 @@ namespace FFXI_ME_v2
                     string number = fi.FullName.Substring(first_index + 1, last_index - (first_index + 1));
                     if (number == String.Empty)
                         cmf.FileNumber = 0;
-                    else cmf.FileNumber = Int32.Parse(number);
+                    else
+                    {
+                        try
+                        {
+                            cmf.FileNumber = Int32.Parse(number);
+                        }
+                        catch
+                        {
+                            cmf.FileNumber = -1;
+                        }
+                    }
                 }
             }
             if (cmf.FileNumber >= Preferences.Max_Macro_Sets)
@@ -4188,9 +4215,9 @@ namespace FFXI_ME_v2
 
                     tsmi[len - 3] = new ToolStripSeparator();
 
-                    tsmi[len - 2] = new ToolStripMenuItem("Save All Macro Sets", Resources.SaveAllHS, saveAllToolStripMenuItem_Click);
+                    tsmi[len - 2] = new ToolStripMenuItem("Save All Changes", Resources.SaveAllHS, saveAllToolStripMenuItem_Click);
 
-                    tsmi[len - 1] = new ToolStripMenuItem("Reload All Macro Sets", Resources.ReloadAll, ReloadAllToolStripMenuItem_Click);
+                    tsmi[len - 1] = new ToolStripMenuItem("Revert All Unsaved Changes", Resources.ReloadAll, ReloadAllToolStripMenuItem_Click);
                     if ((Preferences.Include_Header == false) && (tsmi.Length == 5))
                     {
                         // header
@@ -4321,16 +4348,23 @@ namespace FFXI_ME_v2
 
                 LogMessage.Log("DoItemDrag: {0}", (tN == null) ? "<NULL>" : tN.Text);
                 // if it's one of 2 root nodes cancel
-                if ((tN == null) || (tN.Level == 0)) //== this.treeView.Nodes[0].Level) || (tN == this.treeView.Nodes[1]))
+                if (tN == null)// || (tN.Level == 0)) //== this.treeView.Nodes[0].Level) || (tN == this.treeView.Nodes[1]))
                 {
                     // they clicked it, so select it
                     //if (e.Button == MouseButtons.Left)
                     //   this.treeView.SelectedNode = tN;
                     // if they click it, NodeMouseClick will handle it
-                    LogMessage.Log("DoItemDrag: Base Node attempted to be dragged");
+                    LogMessage.Log("DoItemDrag: Null Node attempted to be dragged");
                     return;
                 }
+                else if (((TagInfo)tN.Tag).Type == "template" && tN.Level == 0)
+                {
+                    LogMessage.Log("DoItemDrag: Template Node attempted to be dragged");
+                    return;
+                }
+
                 TagInfo tI = tN.Tag as TagInfo;
+
                 if ((tI != null) && (tI.Type == "book") && (tN.Nodes.Count == 0))
                 {
                     LogMessage.Log("..DoItemDrag: Premature end, attempt to drag (swap/copy) an empty book");
@@ -4348,11 +4382,21 @@ namespace FFXI_ME_v2
 
                 // Reset image list used for drag image
                 this.imageListForDrag.Images.Clear();
-                this.imageListForDrag.ImageSize = new Size(tN.Bounds.Size.Width + this.treeView.Indent, tN.Bounds.Height);
+                int Width = Math.Max(1, Math.Min(256, tN.Bounds.Size.Width + this.treeView.Indent));
+                int Height = Math.Max(1, Math.Min(256, tN.Bounds.Size.Height));
 
+                try
+                {
+                    this.imageListForDrag.ImageSize = new Size(Width, Height);
+                }
+                catch (Exception exc)
+                {
+                    LogMessage.Log(exc.Message);
+                    //this.imageListForDrag.ImageSize = new Size(tN.Bounds.Size.Width + this.treeView.Indent, tN.Bounds.Height);
+                }
                 // Create new bitmap
                 // This bitmap will contain the tree node image to be dragged
-                Bitmap bmp = new Bitmap(tN.Bounds.Width + this.treeView.Indent, tN.Bounds.Height);
+                Bitmap bmp = new Bitmap(Width, Height);
 
                 // Get graphics from bitmap
                 Graphics gfx = Graphics.FromImage(bmp);
@@ -4427,7 +4471,7 @@ namespace FFXI_ME_v2
             }
             catch (Exception ex)
             {
-                LogMessage.LogF("ItemDrag event: " + ex.Message);
+                LogMessage.LogF("GiveFeedback event: " + ex.Message);
             }
 
         }
@@ -4450,7 +4494,7 @@ namespace FFXI_ME_v2
             }
             catch (Exception ex)
             {
-                LogMessage.LogF("ItemDrag event: " + ex.Message);
+                LogMessage.LogF("QueryContinueDrag event: " + ex.Message);
             }
         }
 
@@ -4464,263 +4508,291 @@ namespace FFXI_ME_v2
             try
             {
                 TreeView tree = sender as TreeView;
-                TreeNode dragNode = e.Data.GetData(typeof(TreeNode)) as TreeNode;
 
-                if ((dragNode != null) && (tree != null))
+                if (!e.Data.GetDataPresent(typeof(TreeNode)) && !e.Data.GetDataPresent("FileDrop"))
                 {
-                    //LogMessage.Log("DoDragOver START: {0}", dragNode.Text);
+                    e.Effect = DragDropEffects.None;
+                    return;
+                }
 
-                    // Compute drag position and move image
-                    Point pt = new Point(e.X, e.Y);
-                    Point formP = this.PointToClient(pt);
+                if (e.Data.GetDataPresent("FileDrop"))
+                {
+                    e.Effect = DragDropEffects.Copy;
+                }
+                else if (e.Data.GetDataPresent(typeof(TreeNode)))
+                {
+                    #region TreeNode Present
+                    TreeNode dragNode = e.Data.GetData(typeof(TreeNode)) as TreeNode;
 
-                    DragHelper.ImageList_DragMove(formP.X - tree.Left, formP.Y - tree.Top);
-                    //LogMessage.Log("DragOver: DragMove x{0} y{1}", formP.X - tree.Left, formP.Y - tree.Top);
-                    // Get actual drop node
-                    TreeNode dropNode = tree.GetNodeAt(tree.PointToClient(pt));
-                    //LogMessage.Log("..DoDragOver: {0} -> {1}", dragNode.Text, (dropNode == null) ? "Unknown" : dropNode.Text);
-                    if (dropNode == null)
-                        e.Effect = DragDropEffects.None;
-                    else
+                    if ((dragNode != null) && (tree != null))
                     {
-                        // by default, attempt to swap.
-                        CancelOnLeave = false;
-                        e.Effect = DragDropEffects.Link; // Swap by default
-                        if (is_set(e.KeyState, rightmouse))
-                        {
-                            e.Effect = DragDropEffects.Move;
-                            //LogMessage.Log("..DragOver: KeyState rightmouse is set!");
-                            //LogMessage.Log("..DoDragOver: {0} e.Effect: {1}", dragNode.Text, e.Effect);
-                        }
-                        else if (is_set(e.KeyState, ctrl))
-                        {
-                            e.Effect = DragDropEffects.Copy;
-                            //LogMessage.Log("..DragOver: KeyState ctrl_input key is set!");
-                            //LogMessage.Log("..DoDragOver: {0} e.Effect: {1}", dragNode.Text, e.Effect);
-                        }
-                        // if mouse is on a new node "highlight" it
-                        if (tree.SelectedNode != dropNode)
-                        {
-                            //LogMessage.Log("..DoDragOver: SelectedNode != dropNode");
-                            DragHelper.ImageList_DragShowNolock(false);
+                        //LogMessage.Log("DoDragOver START: {0}", dragNode.Text);
 
-                            int delta = tree.Height - formP.Y;
-                            if ((delta < tree.Height / 2) && (delta > 0))
-                            {
-                                //LogMessage.Log("..DoDragOver: EnsuringVisible (Next)");
-                                if (dropNode.NextVisibleNode != null)
-                                    dropNode.NextVisibleNode.EnsureVisible();
-                            }
-                            if ((delta > tree.Height / 2) && (delta < tree.Height))
-                            {
-                                //LogMessage.Log("..DoDragOver: EnsuringVisible (Prev)");
-                                if (dropNode.PrevVisibleNode != null)
-                                    dropNode.PrevVisibleNode.EnsureVisible();
-                            }
+                        // Compute drag position and move image
+                        Point pt = new Point(e.X, e.Y);
+                        Point formP = this.PointToClient(pt);
 
-                            RawSelect(dropNode);
-                            //LogMessage.Log("..DoDragOver: SetSelectedNode to dropNode");
-                            //LogMessage.Log("..DoDragOver: Removed DragLock");
-                            DragHelper.ImageList_DragShowNolock(true);
-
-                            //this.tempDropNode = dropNode;
-                            //LogMessage.Log("..DoDragOver: tempDrop set to dropNode");
-                        }
-
-                        if (dragNode == dropNode)
-                        {
+                        DragHelper.ImageList_DragMove(formP.X - tree.Left, formP.Y - tree.Top);
+                        //LogMessage.Log("DragOver: DragMove x{0} y{1}", formP.X - tree.Left, formP.Y - tree.Top);
+                        // Get actual drop node
+                        TreeNode dropNode = tree.GetNodeAt(tree.PointToClient(pt));
+                        //LogMessage.Log("..DoDragOver: {0} -> {1}", dragNode.Text, (dropNode == null) ? "Unknown" : dropNode.Text);
+                        if (dropNode == null)
                             e.Effect = DragDropEffects.None;
-                            //LogMessage.Log("..DoDragOver: dragNode == dropNode? {0}", (dragNode == dropNode));
-                        }
-                        // Nowhere in this program can I drop any node
-                        // on its immediate parent and be able to figure
-                        // out WHAT the user wants me to do there.
-                        // So we'll cut it out here.
-                        if (dragNode.Parent == dropNode)
+                        else
                         {
-                            e.Effect = DragDropEffects.None;
-                        }
-
-                        // if not None yet, it's still assumed valid
-                        if ((e.Effect != DragDropEffects.None) && (e.Effect != DragDropEffects.Move))
-                        {
-                            TagInfo tIdrag = dragNode.Tag as TagInfo,
-                                tIdrop = dropNode.Tag as TagInfo;
-                            //LogMessage.Log("..DoDragOver: e.Effect is not None yet : {0}", e.Effect);
-                            // Add Support for different drop targets based on drag targets here.
-                            // Ie, which ones are allowed.  In the DoDragDrop event we've setup
-                            // is where we actually add the support itself.
-                            // IE: How to handle a Macro drop onto a Macrofile.
-
-                            #region Switch (dragType) Sets Default or None if invalid drop location
-                            switch (tIdrag.Type)
+                            // by default, attempt to swap.
+                            CancelOnLeave = false;
+                            e.Effect = DragDropEffects.Link; // Swap by default
+                            if (is_set(e.KeyState, rightmouse))
                             {
-                                case "macro":
-                                    if ((tIdrop.Type != "macrofile") &&
-                                        (tIdrop.Type != "ctrlmacro") &&
-                                        (tIdrop.Type != "altmacro") &&
-                                        (tIdrop.Type != "macro"))
-                                        e.Effect = DragDropEffects.None;
-                                    break;
-                                case "macrofile": // Nothing else supported at this time but file->file
-                                    if ((tIdrop.Type != "template") &&
-                                        (tIdrop.Type != "main") &&
-                                        (tIdrop.Type != "folder") && // macrofile -> folder, Copy, Check Overwrite, Confirm, require Save first
-                                        (tIdrop.Type != "macrofile") && // this replaces the EXACT macro file it's dropped to.
-                                        (tIdrop.Type != "book") && // this should replace the filenumber modified file under the new book
-                                        (tIdrop.Type != "char")) // This should replace the exact filename under different char
-                                        e.Effect = DragDropEffects.None;
-                                    else if ((tIdrop.Type == "char") && (dragNode.Parent != null) && (dragNode.Parent.Parent == dropNode)) // same char....
-                                        e.Effect = DragDropEffects.None;
-                                    else if (GetDropFileFromInfo(dragNode, dropNode) == null)
-                                        e.Effect = DragDropEffects.Copy;
-                                    break;
-                                case "ctrlmacro":
-                                case "altmacro":
-                                    if ((tIdrop.Type != "macrofile") &&
-                                        (tIdrop.Type != "ctrlmacro") &&
-                                        (tIdrop.Type != "altmacro"))
-                                        e.Effect = DragDropEffects.None;
-                                    break;
-                                case "book":
-                                    if ((tIdrop.Type != "char") && // book -> char, if not already owned by char, Copy by confirmed overwrite to new char's folder, same Set/Filenames
-                                        (tIdrop.Type != "folder") &&  // book -> folder Copy all 10 appropriate Macro Sets, warning of overwrite, require Save first if any Changed
-                                        (tIdrop.Type != "book") && // book -> book, Swap, Copy supported, require Saving first. Rename Files, Reload(?).
-                                        (tIdrop.Type != "template") && // book -> temp, Copy all 10 Macro Files to the template folder, save first, check for overwrite
-                                        (tIdrop.Type != "main"))
-                                        e.Effect = DragDropEffects.None;
-                                    else if (tIdrop.Type != "book")
-                                    {
-                                        e.Effect = DragDropEffects.Copy;
-                                    }
-                                    else if (tIdrop.Type == "book")
-                                    {
-                                        if ((dropNode.FirstNode == null) || (dropNode.Nodes.Count == 0))
-                                            e.Effect = DragDropEffects.Copy; // default action
-                                    }
-                                    break;
-                                case "char":
-                                    if ((tIdrop.Type != "char") && // char to char copy/swap, I want them to require saving first
-                                        (tIdrop.Type != "folder") &&
-                                        (tIdrop.Type != "template") &&
-                                        (tIdrop.Type != "main")) // copy an entire character's macro files to anywhere on folders
-                                        e.Effect = DragDropEffects.None;
-                                    else e.Effect = DragDropEffects.Copy;
-                                    break;
-                                case "folder":
-                                    if ((tIdrop.Type != "main") &&
-                                        (tIdrop.Type != "char") &&
-                                        (tIdrop.Type != "template") &&
-                                        (tIdrop.Type != "folder"))
-                                        e.Effect = DragDropEffects.None;
-                                    else e.Effect = DragDropEffects.Copy; // default action
-                                    break;
-                                case "main":     // if you even MANAGE to pull this off...
-                                case "template": // or this, you'll be treated to not being able to drop it.
-                                default:
-                                    e.Effect = DragDropEffects.None;
-                                    break;
+                                e.Effect = DragDropEffects.Move;
+                                //LogMessage.Log("..DragOver: KeyState rightmouse is set!");
+                                //LogMessage.Log("..DoDragOver: {0} e.Effect: {1}", dragNode.Text, e.Effect);
                             }
-                            #endregion
-                            //LogMessage.Log("..DoDragOver: e.Effect is : {0}", e.Effect);
-                        }
-                        else if (e.Effect == DragDropEffects.Move)
-                        {
-                            TagInfo tIdrag = dragNode.Tag as TagInfo,
-                                tIdrop = dropNode.Tag as TagInfo;
-
-                            #region Switch (dragType for Right-Drag Only) Sets None if invalid drop location
-                            switch (tIdrag.Type)
+                            else if (is_set(e.KeyState, ctrl))
                             {
-                                case "macro":
-                                    if ((tIdrop.Type != "macrofile") &&
-                                        (tIdrop.Type != "ctrlmacro") &&
-                                        (tIdrop.Type != "altmacro") &&
-                                        (tIdrop.Type != "macro"))
-                                        e.Effect = DragDropEffects.None;
-                                    break;
-                                case "macrofile": // Nothing else supported at this time but file->file
-                                    if ((tIdrop.Type != "template") &&
+                                e.Effect = DragDropEffects.Copy;
+                                //LogMessage.Log("..DragOver: KeyState ctrl_input key is set!");
+                                //LogMessage.Log("..DoDragOver: {0} e.Effect: {1}", dragNode.Text, e.Effect);
+                            }
+                            // if mouse is on a new node "highlight" it
+                            if (tree.SelectedNode != dropNode)
+                            {
+                                //LogMessage.Log("..DoDragOver: SelectedNode != dropNode");
+                                DragHelper.ImageList_DragShowNolock(false);
+
+                                int delta = tree.Height - formP.Y;
+                                if ((delta < tree.Height / 2) && (delta > 0))
+                                {
+                                    //LogMessage.Log("..DoDragOver: EnsuringVisible (Next)");
+                                    if (dropNode.NextVisibleNode != null)
+                                        dropNode.NextVisibleNode.EnsureVisible();
+                                }
+                                if ((delta > tree.Height / 2) && (delta < tree.Height))
+                                {
+                                    //LogMessage.Log("..DoDragOver: EnsuringVisible (Prev)");
+                                    if (dropNode.PrevVisibleNode != null)
+                                        dropNode.PrevVisibleNode.EnsureVisible();
+                                }
+
+                                RawSelect(dropNode);
+                                //LogMessage.Log("..DoDragOver: SetSelectedNode to dropNode");
+                                //LogMessage.Log("..DoDragOver: Removed DragLock");
+                                DragHelper.ImageList_DragShowNolock(true);
+
+                                //this.tempDropNode = dropNode;
+                                //LogMessage.Log("..DoDragOver: tempDrop set to dropNode");
+                            }
+
+                            if (dragNode == dropNode)
+                            {
+                                e.Effect = DragDropEffects.None;
+                                CancelOnLeave = true;
+                                return;
+                                //LogMessage.Log("..DoDragOver: dragNode == dropNode? {0}", (dragNode == dropNode));
+                            }
+                            // Nowhere in this program can I drop any node
+                            // on its immediate parent and be able to figure
+                            // out WHAT the user wants me to do there.
+                            // So we'll cut it out here.
+                            if (dragNode.Parent == dropNode)
+                            {
+                                e.Effect = DragDropEffects.None;
+                            }
+
+                            // if not None yet, it's still assumed valid
+                            if ((e.Effect != DragDropEffects.None) && (e.Effect != DragDropEffects.Move))
+                            {
+                                TagInfo tIdrag = dragNode.Tag as TagInfo,
+                                    tIdrop = dropNode.Tag as TagInfo;
+                                //LogMessage.Log("..DoDragOver: e.Effect is not None yet : {0}", e.Effect);
+                                // Add Support for different drop targets based on drag targets here.
+                                // Ie, which ones are allowed.  In the DoDragDrop event we've setup
+                                // is where we actually add the support itself.
+                                // IE: How to handle a Macro drop onto a Macrofile.
+
+                                #region Switch (dragType) Sets Default or None if invalid drop location
+                                switch (tIdrag.Type)
+                                {
+                                    case "macro":
+                                        if ((tIdrop.Type != "macrofile") &&
+                                            (tIdrop.Type != "ctrlmacro") &&
+                                            (tIdrop.Type != "altmacro") &&
+                                            (tIdrop.Type != "macro"))
+                                            e.Effect = DragDropEffects.None;
+                                        break;
+                                    case "macrofile": // Nothing else supported at this time but file->file
+                                        TagInfo tiParent = (dragNode.Parent != null) ? dragNode.Parent.Tag as TagInfo : null;
+
+                                        if ((tIdrop.Type != "template") &&
                                             (tIdrop.Type != "main") &&
                                             (tIdrop.Type != "folder") && // macrofile -> folder, Copy, Check Overwrite, Confirm, require Save first
                                             (tIdrop.Type != "macrofile") && // this replaces the EXACT macro file it's dropped to.
                                             (tIdrop.Type != "book") && // this should replace the filenumber modified file under the new book
                                             (tIdrop.Type != "char")) // This should replace the exact filename under different char
+                                            e.Effect = DragDropEffects.None;
+                                        else if ((tIdrop.Type == "char") &&
+                                            (dragNode.Parent != null) &&
+                                            ((dragNode.Parent.Parent == dropNode) && (tiParent.Type == "book"))
+                                            )
+                                            e.Effect = DragDropEffects.None;
+                                        else if (GetDropFileFromInfo(dragNode, dropNode) == null)
+                                            e.Effect = DragDropEffects.Copy;
+                                        break;
+                                    case "ctrlmacro":
+                                    case "altmacro":
+                                        if ((tIdrop.Type != "macrofile") &&
+                                            (tIdrop.Type != "ctrlmacro") &&
+                                            (tIdrop.Type != "altmacro"))
+                                            e.Effect = DragDropEffects.None;
+                                        break;
+                                    case "book":
+                                        if ((tIdrop.Type != "char") && // book -> char, if not already owned by char, Copy by confirmed overwrite to new char's folder, same Set/Filenames
+                                            (tIdrop.Type != "folder") &&  // book -> folder Copy all 10 appropriate Macro Sets, warning of overwrite, require Save first if any Changed
+                                            (tIdrop.Type != "book") && // book -> book, Swap, Copy supported, require Saving first. Rename Files, Reload(?).
+                                            (tIdrop.Type != "template") && // book -> temp, Copy all 10 Macro Files to the template folder, save first, check for overwrite
+                                            (tIdrop.Type != "main"))
+                                            e.Effect = DragDropEffects.None;
+                                        else if (tIdrop.Type != "book")
+                                        {
+                                            e.Effect = DragDropEffects.Copy;
+                                        }
+                                        else if (tIdrop.Type == "book")
+                                        {
+                                            if ((dropNode.FirstNode == null) || (dropNode.Nodes.Count == 0))
+                                                e.Effect = DragDropEffects.Copy; // default action
+                                        }
+                                        break;
+                                    case "char":
+                                        if ((tIdrop.Type != "char") && // char to char copy/swap, I want them to require saving first
+                                            (tIdrop.Type != "folder") &&
+                                            (tIdrop.Type != "template") &&
+                                            (tIdrop.Type != "main")) // copy an entire character's macro files to anywhere on folders
+                                            e.Effect = DragDropEffects.None;
+                                        else e.Effect = DragDropEffects.Copy;
+                                        break;
+                                    case "main":
+                                    case "folder":
+                                        if ((tIdrop.Type != "main") &&
+                                            (tIdrop.Type != "char") &&
+                                            (tIdrop.Type != "template") &&
+                                            (tIdrop.Type != "folder"))
+                                            e.Effect = DragDropEffects.None;
+                                        else e.Effect = DragDropEffects.Copy; // default action
+                                        break;
+                                    case "template": // if you even MANAGE to pull this off..., you'll be treated to not being able to drop it.
+                                    default:
                                         e.Effect = DragDropEffects.None;
-                                    else if ((tIdrop.Type == "char") && (dragNode.Parent != null) && (dragNode.Parent.Parent == dropNode)) // same char....
-                                        e.Effect = DragDropEffects.None;
-                                    break;
-                                case "ctrlmacro":
-                                case "altmacro":
-                                    if ((tIdrop.Type != "macrofile") &&
-                                        (tIdrop.Type != "ctrlmacro") &&
-                                        (tIdrop.Type != "altmacro"))
-                                        e.Effect = DragDropEffects.None;
-                                    break;
-                                case "book":
-                                    if ((tIdrop.Type != "char") && // book -> char, if not already owned by char, Copy by confirmed overwrite to new char's folder, same Set/Filenames
-                                        (tIdrop.Type != "folder") &&  // book -> folder Copy all 10 appropriate Macro Sets, warning of overwrite, require Save first if any Changed
-                                        (tIdrop.Type != "book") && // book -> book, Swap, Copy supported, require Saving first. Rename Files, Reload(?).
-                                        (tIdrop.Type != "template") && // book -> temp, Copy all 10 Macro Files to the template folder, save first, check for overwrite
-                                        (tIdrop.Type != "main"))
-                                        e.Effect = DragDropEffects.None;
-                                    break;
-                                case "char":
-                                    if ((tIdrop.Type != "char") && // char to char copy/swap, I want them to require saving first
-                                        (tIdrop.Type != "folder") &&
-                                        (tIdrop.Type != "template") &&
-                                        (tIdrop.Type != "main")) // copy an entire character's macro files to anywhere on folders
-                                        e.Effect = DragDropEffects.None;
-                                    break;
-                                case "folder":
-                                    if ((tIdrop.Type != "main") &&
-                                        (tIdrop.Type != "char") &&
-                                        (tIdrop.Type != "template") &&
-                                        (tIdrop.Type != "folder"))
-                                        e.Effect = DragDropEffects.None;
-                                    break;
-                                case "main":     // if you even MANAGE to pull this off...
-                                case "template": // or this, you'll be treated to not being able to drop it.
-                                default:
-                                    e.Effect = DragDropEffects.None;
-                                    break;
-                            }
-                            #endregion
-                        }
-
-                        if (e.Effect != DragDropEffects.None)
-                        {
-                            //LogMessage.Log("..DoDragOver: e.Effect != None still: {0}", e.Effect);
-                            // Avoid that drop node is child of drag node 
-                            TreeNode tmpNode = dropNode;
-                            while (tmpNode.Parent != null)
-                            {
-                                if (tmpNode.Parent == dragNode)
-                                {
-                                    e.Effect = DragDropEffects.None;
-                                    CancelOnLeave = true;
-                                    //LogMessage.Log("..DoDragOver: tempNode.Parent == dragNode e.Effect: {0}", e.Effect);
-                                    break;
+                                        break;
                                 }
-                                tmpNode = tmpNode.Parent;
+                                #endregion
+                                //LogMessage.Log("..DoDragOver: e.Effect is : {0}", e.Effect);
+                            }
+                            else if (e.Effect == DragDropEffects.Move)
+                            {
+                                TagInfo tIdrag = dragNode.Tag as TagInfo,
+                                    tIdrop = dropNode.Tag as TagInfo;
+
+                                #region Switch (dragType for Right-Drag Only) Sets None if invalid drop location
+                                switch (tIdrag.Type)
+                                {
+                                    case "macro":
+                                        if ((tIdrop.Type != "macrofile") &&
+                                            (tIdrop.Type != "ctrlmacro") &&
+                                            (tIdrop.Type != "altmacro") &&
+                                            (tIdrop.Type != "macro"))
+                                            e.Effect = DragDropEffects.None;
+                                        break;
+                                    case "macrofile": // If somehow, you manage to make Type be something we don't have available at all.
+                                        TagInfo tiParent = (dragNode.Parent != null) ? dragNode.Parent.Tag as TagInfo : null;
+
+                                        if ((tIdrop.Type != "template") &&
+                                                (tIdrop.Type != "main") &&
+                                                (tIdrop.Type != "folder") && // macrofile -> folder, Copy, Check Overwrite, Confirm, require Save first
+                                                (tIdrop.Type != "macrofile") && // this replaces the EXACT macro file it's dropped to.
+                                                (tIdrop.Type != "book") && // this should replace the filenumber modified file under the new book
+                                                (tIdrop.Type != "char")) // This should replace the exact filename under different char
+                                            e.Effect = DragDropEffects.None;
+                                        else if ((tIdrop.Type == "char") &&
+                                            (dragNode.Parent != null) &&
+                                            ((dragNode.Parent.Parent == dropNode) && (tiParent.Type == "book"))
+                                            )
+                                            e.Effect = DragDropEffects.None;
+                                        break;
+                                    case "ctrlmacro":
+                                    case "altmacro":
+                                        if ((tIdrop.Type != "macrofile") &&
+                                            (tIdrop.Type != "ctrlmacro") &&
+                                            (tIdrop.Type != "altmacro"))
+                                            e.Effect = DragDropEffects.None;
+                                        break;
+                                    case "book":
+                                        if ((tIdrop.Type != "char") && // book -> char, if not already owned by char, Copy by confirmed overwrite to new char's folder, same Set/Filenames
+                                            (tIdrop.Type != "folder") &&  // book -> folder Copy all 10 appropriate Macro Sets, warning of overwrite, require Save first if any Changed
+                                            (tIdrop.Type != "book") && // book -> book, Swap, Copy supported, require Saving first. Rename Files, Reload(?).
+                                            (tIdrop.Type != "template") && // book -> temp, Copy all 10 Macro Files to the template folder, save first, check for overwrite
+                                            (tIdrop.Type != "main"))
+                                            e.Effect = DragDropEffects.None;
+                                        break;
+                                    case "char":
+                                        if ((tIdrop.Type != "char") && // char to char copy/swap, I want them to require saving first
+                                            (tIdrop.Type != "folder") &&
+                                            (tIdrop.Type != "template") &&
+                                            (tIdrop.Type != "main")) // copy an entire character's macro files to anywhere on folders
+                                            e.Effect = DragDropEffects.None;
+                                        break;
+                                    case "folder":
+                                        if ((tIdrop.Type != "main") &&
+                                            (tIdrop.Type != "char") &&
+                                            (tIdrop.Type != "template") &&
+                                            (tIdrop.Type != "folder"))
+                                            e.Effect = DragDropEffects.None;
+                                        break;
+                                    case "main":     // if you even MANAGE to pull this off...
+                                    case "template": // or this, you'll be treated to not being able to drop it.
+                                    default:
+                                        e.Effect = DragDropEffects.None;
+                                        break;
+                                }
+                                #endregion
+                            }
+
+                            if (e.Effect != DragDropEffects.None)
+                            {
+                                //LogMessage.Log("..DoDragOver: e.Effect != None still: {0}", e.Effect);
+                                // Avoid that drop node is child of drag node 
+                                TreeNode tmpNode = dropNode;
+                                while (tmpNode.Parent != null)
+                                {
+                                    if (tmpNode.Parent == dragNode)
+                                    {
+                                        e.Effect = DragDropEffects.None;
+                                        CancelOnLeave = true;
+                                        //LogMessage.Log("..DoDragOver: tempNode.Parent == dragNode e.Effect: {0}", e.Effect);
+                                        break;
+                                    }
+                                    tmpNode = tmpNode.Parent;
+                                }
                             }
                         }
+                        if (e.Effect == DragDropEffects.None)
+                        {
+                            // do same effect as if they had pressed escape to cancel the drag
+                            // by clearing the info.
+                            // because DragLeave is called instead of DragDrop if effect is "None"
+                            CancelOnLeave = true;
+                            //LogMessage.Log("..DoDragOver: Setting CancelOnLeave truee, e.Effect: {0}", e.Effect);
+                        }
+                        //LogMessage.Log("DoDragOver END: {0} e.Effect: {1}", dragNode.Text, e.Effect);
                     }
-                    if (e.Effect == DragDropEffects.None)
-                    {
-                        // do same effect as if they had pressed escape to cancel the drag
-                        // by clearing the info.
-                        // because DragLeave is called instead of DragDrop if effect is "None"
-                        CancelOnLeave = true;
-                        //LogMessage.Log("..DoDragOver: Setting CancelOnLeave truee, e.Effect: {0}", e.Effect);
-                    }
-                    //LogMessage.Log("DoDragOver END: {0} e.Effect: {1}", dragNode.Text, e.Effect);
+                    #endregion
                 }
                 //else LogMessage.Log("DragOver: dragNode is null! (BAD)");
             }
             catch (Exception ex)
             {
-                LogMessage.LogF("ItemDrag event: " + ex.Message);
+                LogMessage.LogF("DragOver event: " + ex.Message);
             }
         }
 
@@ -4740,14 +4812,14 @@ namespace FFXI_ME_v2
                 if (!timer.Enabled)
                     timer.Start();
 
-                if (!e.Data.GetDataPresent(typeof(TreeNode)))
+                if (e.Data.GetDataPresent("FileDrop"))
                 {
-                    LogMessage.Log(" DragEnter: GetDataPresent(TreeNode) = false, Drag the right stuff");
-                    //e.Effect = DragDropEffects.None;
-                    e.Effect = DragDropEffects.Copy;
+                    String[] s = e.Data.GetData("FileDrop") as String[];
                     Ignore = true;
+                    foreach (String x in s)
+                        LogMessage.Log("FileDrop: '{0}'", x);
                 }
-                else
+                else if (e.Data.GetDataPresent(typeof(TreeNode)))
                 {
                     LogMessage.Log("DragEnter: GetDataPresent(TreeNode) = true (good)");
                     dragNode = (TreeNode)e.Data.GetData(typeof(TreeNode));
@@ -4759,13 +4831,19 @@ namespace FFXI_ME_v2
                         LogMessage.Log("DragEnter: drag2 is null");
                     else LogMessage.Log("DragEnter: drag2 is NOT null, (good) Name: '{0}'", drag2.Text);
                 }
+                else
+                {
+                    LogMessage.Log(" DragEnter: GetDataPresent(TreeNode) = false, Drag the right stuff");
+                    e.Effect = DragDropEffects.None;
+                    Ignore = true;
+                }
 
                 if (!Ignore)
                     DragHelper.ImageList_DragEnter(tree.Handle, e.X - tree.Left, e.Y - tree.Top);
             }
             catch (Exception ex)
             {
-                LogMessage.LogF("ItemDrag event: " + ex.Message);
+                LogMessage.LogF("DragEnter event: " + ex.Message);
             }
 
         }
@@ -4800,7 +4878,7 @@ namespace FFXI_ME_v2
             }
             catch (Exception ex)
             {
-                LogMessage.LogF("ItemDrag event: " + ex.Message);
+                LogMessage.LogF("DragLeave event: " + ex.Message);
             }
         }
 
@@ -4810,260 +4888,305 @@ namespace FFXI_ME_v2
 
             try
             {
+                if (!e.Data.GetDataPresent("FileDrop") && !e.Data.GetDataPresent(typeof(TreeNode)))
+                {
+                    this.RestoreCursor();
+                    this.interval = 0;
+                    timer.Stop();
+                    return;
+                }
+
                 TreeView tree = sender as TreeView;
 
-                // Get drop node
-                Point xP = tree.PointToClient(new Point(e.X, e.Y));
-                TreeNode dropNode = tree.GetNodeAt(xP);
-                TreeNode dragNode = (TreeNode)e.Data.GetData(typeof(TreeNode));
-
-                String[] s = e.Data.GetFormats();
-                String msg = String.Empty;
-                foreach (String formats in s)
+                if (e.Data.GetDataPresent("FileDrop"))
                 {
-                    msg += String.Format("{0}\r\n", formats);
-                }
-                //MessageBox.Show("DragDrop Formats Dropped :\r\n" + msg);
-                LogMessage.Log("DragDrop Formats Dropped : \r\n" + msg);
-                LogMessage.Log("DoDragDrop START: {0}", dragNode.Text);
-                LogMessage.Log("..DoDragDrop: Attempting to Drop.");
-
-                // Perform Cleanup first
-                //  -- Unlock updates
-                DragHelper.ImageList_DragLeave(this.treeView.Handle);
-                DragHelper.ImageList_EndDrag();
-
-                //  -- Stop Timer
-                this.interval = 0;
-                this.timer.Stop();
-                this.Cursor = Cursors.Default;
-                //  -- Additional Variable
-                CancelOnLeave = false;
-
-                if ((dragNode != null) && (dropNode != null))
-                {
-                    if (dragNode == dropNode)
+                    String[] data = e.Data.GetData("FileDrop") as String[];
+                    bool Added = false;
+                    foreach (String s in data)
                     {
-                        LogMessage.Log("DoDragDrop: Premature End, dragNode == dropNode?! DragLeave wasn't called, somewhere needs to be Effects.None!");
-                        //  -- Reset TreeView
-                        RawSelect(this.originalNode);
-                        this.originalNode = null;
+                        if (Preferences.AddLocation(s))
+                        {
+                            LogMessage.LogF("DragDrop: Added location '{0}'", s);
+                            Added = true;
+                        }
+                        else
+                        {
+                            LogMessage.LogF("DragDrop: Location '{0}' already loaded.", s);
+                        }
+                    }
+                    if (Added)
+                    {
+                        this.RestoreCursor();
+                        this.interval = 0;
+                        timer.Stop();
+                        OpenFolderMethod(Preferences.PathToOpen);
                         return;
-                    }
-
-                    // Duh, I need to MANUALLY SaveToMemory BEFORE Swapping or Copying
-                    // This only works if I don't modify selection
-                    SaveToMemory(this.originalNode);
-
-                    tree.BeginUpdate(); // this.treeView.SuspendLayout();
-
-                    LogMessage.Log("..DoDragDrop: dragNode != dropNode");
-                    CMacro cm_drop = FindMacroByNode(dropNode),
-                            cm_drag = FindMacroByNode(dragNode);
-                    CMacroFile cmf_drag = FindMacroFileByNode(dragNode),
-                                cmf_drop = FindMacroFileByNode(dropNode);
-                    TagInfo tIdrag = dragNode.Tag as TagInfo, tIdrop = dropNode.Tag as TagInfo;
-
-                    if (tIdrag == null)
-                    {
-                        LogMessage.Log("..DragDrop: tIdrag == null: No TagInfo on dragNode!");
-                    }
-
-                    if (tIdrop == null)
-                    {
-                        LogMessage.Log("..DragDrop: tIdrop == null: No TagInfo on dropNode!");
-                    }
-
-                    // don't want waitcursor on Right-Click Menu
-                    if (e.Effect != DragDropEffects.Move)
-                        this.SetWaitCursor();
-
-                    if (e.Effect == DragDropEffects.Move) // Pop right-click menu
-                    {
-                        BuildAndShowDragAndDropContextMenu(dragNode, dropNode, e);
-                    }
-                    else if (tIdrag.Type == "macro")
-                    {
-                        #region DONE: if "macro"
-                        if (tIdrop.Type == "macro")
-                        {
-                            Modify(ref cm_drag, ref cm_drop, e);
-                        }
-                        #endregion
-                        #region DONE: else if "macrofile", "ctrlmacro", "altmacro"
-                        else if ((tIdrop.Type == "macrofile") || (tIdrop.Type == "ctrlmacro") ||
-                            (tIdrop.Type == "altmacro"))
-                        {
-                            if ((cmf_drop == cmf_drag) && (tIdrop.Type != "ctrlmacro") &&
-                                (tIdrop.Type != "altmacro"))
-                            {
-                                // if dropping to the same macro file
-                                // as where we're dragging from, nothing should change
-                                // because it would overwrite itself
-                                MessageBox.Show("Dropping a Macro to the same MacroFile it came from has no effect.", "No Effect");
-                            }
-                            else
-                            {
-                                #region DONE: Swap/Copy Drag & Drop Macro to Same MacroNumber in new MacroFile and update
-                                // if it's dropping to macrofile we already determined
-                                // that it's going to a different macrofile
-                                if (tIdrop.Type == "macrofile")
-                                    cm_drop = cmf_drop.Macros[cm_drag.MacroNumber];
-                                else // it's ctrlmacro or altmacro, so swap between the locations
-                                {
-                                    int number = cm_drag.MacroNumber;
-                                    if ((number > 9) && (number < 20)) // 10 - 19
-                                        cm_drop = cmf_drop.Macros[number - 10];
-                                    else if ((number >= 0) && (number <= 9))
-                                        cm_drop = cmf_drop.Macros[number + 10];
-                                    else cm_drop = cmf_drop.Macros[cm_drop.MacroNumber];
-                                }
-                                Modify(ref cm_drag, ref cm_drop, e);
-                                #endregion
-                            }
-                        }
-                        #endregion
-                    }
-                    else if (tIdrag.Type == "macrofile")
-                    {
-                        #region DONE: if "macrofile" period, handles all cases
-                        if (cmf_drag != null)
-                        {
-                            if (cmf_drop != null) // it's a macrofile, bar, or macro
-                            {
-                                if (e.Effect == DragDropEffects.Link)
-                                {
-                                    Swap(ref cmf_drop, ref cmf_drag);
-                                }
-                                else if (e.Effect == DragDropEffects.Copy)
-                                    cmf_drop.CopyFrom(cmf_drag);
-                            }
-                            else
-                            {
-                                // it's NOT a macrofile we're dropping to
-                                // see if we can find it.
-                                cmf_drop = GetDropFileFromInfo(dragNode, dropNode);
-                                if ((e.Effect == DragDropEffects.Link) && (cmf_drop != null))
-                                {
-                                    // it exists and we're swapping, do it
-                                    Swap(ref cmf_drop, ref cmf_drag);
-                                }
-                                else if ((e.Effect == DragDropEffects.Copy) && (cmf_drop != null))
-                                {
-                                    // if we're copying and it DOES exist
-                                    cmf_drop.CopyFrom(cmf_drag);
-                                }
-                                else if ((e.Effect == DragDropEffects.Copy) && (cmf_drop == null))
-                                {
-                                    // we're copying and it DOESN'T exist, create it.
-                                    cmf_drop = GetDropFileFromInfo(dragNode, dropNode, true);
-                                    cmf_drop.CopyFrom(cmf_drag);
-                                }
-                            }
-                        }
-                        #endregion
-                    }
-                    else if ((tIdrag.Type == "altmacro") || (tIdrag.Type == "ctrlmacro"))
-                    {
-                        #region DONE: if "altmacro", "ctrlmacro", or "macrofile"
-                        if ((tIdrop.Type == "altmacro") || (tIdrop.Type == "ctrlmacro") ||
-                            (tIdrop.Text == "macrofile"))
-                        {
-                            int SwapOrCopy = -1;
-                            if (e.Effect == DragDropEffects.Link)
-                                SwapOrCopy = 1;
-                            else if (e.Effect == DragDropEffects.Copy)
-                                SwapOrCopy = 2;
-                            HandleBarsToBarsOrFile(dragNode, dropNode, SwapOrCopy);
-                        }
-                        #endregion
-                    }
-                    else if (tIdrag.Type == "book")
-                    {
-                        #region if "book"
-                        if (tIdrop.Type == "book") // replace or copy over existing book
-                        {
-                            int SwapOrCopy = -1;
-                            if (e.Effect == DragDropEffects.Link)
-                                SwapOrCopy = 1;
-                            else if (e.Effect == DragDropEffects.Copy)
-                                SwapOrCopy = 2;
-
-                            HandleBookToBook(dragNode, dropNode, SwapOrCopy);
-                        }
-                        #endregion
-                        #region if "char", "folder", "template", "main"
-                        else if ((tIdrop.Type == "char") || (tIdrop.Type == "main") ||
-                                (tIdrop.Type == "folder") || (tIdrop.Type == "template"))
-                        {
-                            #region If Swapping, cancel (Only can swap books)
-                            if (e.Effect == DragDropEffects.Link)
-                            {
-                                LogMessage.Log("..DragDrop: Attempt to Swap book -> a folder type, unsupported");
-                            }
-                            #endregion
-                            #region If valid Copy to folder, char, template
-                            else if (e.Effect == DragDropEffects.Copy)
-                            {
-                                HandleBookToOthers(dragNode, dropNode);
-                            }
-                            #endregion
-                            #region DEBUG?: Everything else.
-                            else
-                            {
-                                LogMessage.Log("..DragDrop: Unsupported event, e.effect is not Swap or Copy");
-                            }
-                            #endregion
-                        }
-                        #endregion
-                    }
-                    else if ((tIdrag.Type == "char") || (tIdrag.Type == "folder"))
-                    {
-                        #region DONE -- need Notification Screen? if "char" or "folder"
-                        LogMessage.Log("DragDrop: char|folder");
-                        if ((tIdrop.Type == "char") || (tIdrop.Type == "folder") ||
-                            (tIdrop.Type == "template") || (tIdrop.Type == "main"))
-                        {
-                            HandleCharOrFolder(dragNode, dropNode);
-                        }
-                        else LogMessage.Log("Invalid Drop Type {0} for dropping \"char\" node", tIdrop.Type);
-                        #endregion
                     }
                     else
                     {
-                        #region DONE: Unhandled situations
-                        if (e.Effect == DragDropEffects.Link) // Swap it.
-                        {
-                            MessageBox.Show("You can't swap that with that!", "Drag & Drop: Unsupported Combination", MessageBoxButtons.OK, MessageBoxIcon.Exclamation, MessageBoxDefaultButton.Button1);
-                            LogMessage.Log("..Drag & Drop Error, Unsupported Source/Target (Link)");
-                        }
-                        else if (e.Effect == DragDropEffects.Copy)
-                        {
-                            MessageBox.Show("You can't copy that there!", "Drag & Drop: Unsupported Combination", MessageBoxButtons.OK, MessageBoxIcon.Exclamation, MessageBoxDefaultButton.Button1);
-                            LogMessage.Log("..Drag & Drop Error, Unsupported Source/Target Combination (Copy)");
-                        }
-                        else // Everything Else
-                        {
-                            MessageBox.Show("OMGWTFBBQ! WHAT DID YOU DO?!?!\r\nUmm, You should NOT have received this message!", "Easy BUG: Contact Developer with exact cause.", MessageBoxButtons.OK, MessageBoxIcon.Exclamation, MessageBoxDefaultButton.Button1);
-                            LogMessage.Log("..ERROR: Copy or Swap not the option given. DragDropEffects: " + e.Effect);
-                        }
-                        #endregion
+                        MessageBox.Show("Those locations are currently loaded.", "No need to update.", MessageBoxButtons.OK);
                     }
                 }
+                else if (e.Data.GetDataPresent(typeof(TreeNode)))
+                {
+                    // Get drop node
+                    Point xP = tree.PointToClient(new Point(e.X, e.Y));
+                    TreeNode dropNode = tree.GetNodeAt(xP);
+                    TreeNode dragNode = (TreeNode)e.Data.GetData(typeof(TreeNode));
 
-                // On Success, reset these back as well.
-                ChangeButtonNames(this.originalNode);
-                FillForm(this.originalNode); // Fill the Form with original Node just in case
-                //  -- Reset TreeView
-                RawSelect(this.originalNode);
-                this.originalNode = null;
-                this.RestoreCursor();
-                tree.EndUpdate();
-                LogMessage.Log("DragDrop END: Drop Attempt Done.");
+                    String[] s = e.Data.GetFormats();
+                    //String msg = String.Empty;
+                    //foreach (String formats in s)
+                    //{
+                        //msg += String.Format("{0}\r\n", formats);
+                    //}
+                    //MessageBox.Show("DragDrop Formats Dropped :\r\n" + msg);
+                    //LogMessage.Log("DragDrop Formats Dropped : \r\n" + msg);
+                    //LogMessage.Log("DoDragDrop START: {0}", dragNode.Text);
+                    //LogMessage.Log("..DoDragDrop: Attempting to Drop.");
+
+                    // Perform Cleanup first
+                    //  -- Unlock updates
+                    DragHelper.ImageList_DragLeave(this.treeView.Handle);
+                    DragHelper.ImageList_EndDrag();
+
+                    //  -- Stop Timer
+                    this.interval = 0;
+                    this.timer.Stop();
+                    this.Cursor = Cursors.Default;
+                    //  -- Additional Variable
+                    CancelOnLeave = false;
+
+                    if ((dragNode != null) && (dropNode != null))
+                    {
+                        if (dragNode == dropNode)
+                        {
+                            LogMessage.Log("DoDragDrop: Premature End, dragNode == dropNode?! DragLeave wasn't called, somewhere needs to be Effects.None!");
+                            //  -- Reset TreeView
+                            RawSelect(this.originalNode);
+                            this.originalNode = null;
+                            return;
+                        }
+
+                        // Duh, I need to MANUALLY SaveToMemory BEFORE Swapping or Copying
+                        // This only works if I don't modify selection
+                        SaveToMemory(this.originalNode);
+
+                        tree.BeginUpdate(); // this.treeView.SuspendLayout();
+
+                        LogMessage.Log("..DoDragDrop: dragNode != dropNode");
+                        CMacro cm_drop = FindMacroByNode(dropNode),
+                                cm_drag = FindMacroByNode(dragNode);
+                        CMacroFile cmf_drag = FindMacroFileByNode(dragNode),
+                                    cmf_drop = FindMacroFileByNode(dropNode);
+                        TagInfo tIdrag = dragNode.Tag as TagInfo, tIdrop = dropNode.Tag as TagInfo;
+
+                        if (tIdrag == null)
+                        {
+                            LogMessage.Log("..DragDrop: tIdrag == null: No TagInfo on dragNode!");
+                        }
+
+                        if (tIdrop == null)
+                        {
+                            LogMessage.Log("..DragDrop: tIdrop == null: No TagInfo on dropNode!");
+                        }
+
+                        // don't want waitcursor on Right-Click Menu
+                        if (e.Effect != DragDropEffects.Move)
+                            this.SetWaitCursor();
+
+                        if (e.Effect == DragDropEffects.Move) // Pop right-click menu
+                        {
+                            BuildAndShowDragAndDropContextMenu(dragNode, dropNode, e);
+                        }
+                        else if (tIdrag.Type == "macro")
+                        {
+                            #region DONE: if "macro"
+                            if (tIdrop.Type == "macro")
+                            {
+                                Modify(ref cm_drag, ref cm_drop, e);
+                            }
+                            #endregion
+                            #region DONE: else if "macrofile", "ctrlmacro", "altmacro"
+                            else if ((tIdrop.Type == "macrofile") || (tIdrop.Type == "ctrlmacro") ||
+                                (tIdrop.Type == "altmacro"))
+                            {
+                                if ((cmf_drop == cmf_drag) && (tIdrop.Type != "ctrlmacro") &&
+                                    (tIdrop.Type != "altmacro"))
+                                {
+                                    // if dropping to the same macro file
+                                    // as where we're dragging from, nothing should change
+                                    // because it would overwrite itself
+                                    MessageBox.Show("Dropping a Macro to the same MacroFile it came from has no effect.", "No Effect");
+                                }
+                                else
+                                {
+                                    #region DONE: Swap/Copy Drag & Drop Macro to Same MacroNumber in new MacroFile and update
+                                    // if it's dropping to macrofile we already determined
+                                    // that it's going to a different macrofile
+                                    if (tIdrop.Type == "macrofile")
+                                        cm_drop = cmf_drop.Macros[cm_drag.MacroNumber];
+                                    else // it's ctrlmacro or altmacro, so swap between the locations
+                                    {
+                                        int number = cm_drag.MacroNumber;
+                                        if ((number > 9) && (number < 20)) // 10 - 19
+                                            cm_drop = cmf_drop.Macros[number - 10];
+                                        else if ((number >= 0) && (number <= 9))
+                                            cm_drop = cmf_drop.Macros[number + 10];
+                                        else cm_drop = cmf_drop.Macros[cm_drop.MacroNumber];
+                                    }
+                                    Modify(ref cm_drag, ref cm_drop, e);
+                                    #endregion
+                                }
+                            }
+                            #endregion
+                        }
+                        else if (tIdrag.Type == "macrofile")
+                        {
+                            #region DONE: if "macrofile" period, handles all cases
+                            if (cmf_drag != null)
+                            {
+                                if (cmf_drop != null) // it's a macrofile, bar, or macro
+                                {
+                                    if (e.Effect == DragDropEffects.Link)
+                                    {
+                                        Swap(ref cmf_drop, ref cmf_drag);
+                                    }
+                                    else if (e.Effect == DragDropEffects.Copy)
+                                        cmf_drop.CopyFrom(cmf_drag);
+                                }
+                                else
+                                {
+                                    // it's NOT a macrofile we're dropping to
+                                    // see if we can find it.
+                                    cmf_drop = GetDropFileFromInfo(dragNode, dropNode);
+                                    if ((e.Effect == DragDropEffects.Link) && (cmf_drop != null))
+                                    {
+                                        // it exists and we're swapping, do it
+                                        Swap(ref cmf_drop, ref cmf_drag);
+                                    }
+                                    else if ((e.Effect == DragDropEffects.Copy) && (cmf_drop != null))
+                                    {
+                                        // if we're copying and it DOES exist
+                                        cmf_drop.CopyFrom(cmf_drag);
+                                    }
+                                    else if ((e.Effect == DragDropEffects.Copy) && (cmf_drop == null))
+                                    {
+                                        // we're copying and it DOESN'T exist, create it.
+                                        cmf_drop = GetDropFileFromInfo(dragNode, dropNode, true);
+                                        cmf_drop.CopyFrom(cmf_drag);
+                                    }
+                                }
+                            }
+                            #endregion
+                        }
+                        else if ((tIdrag.Type == "altmacro") || (tIdrag.Type == "ctrlmacro"))
+                        {
+                            #region DONE: if "altmacro", "ctrlmacro", or "macrofile"
+                            if ((tIdrop.Type == "altmacro") || (tIdrop.Type == "ctrlmacro") ||
+                                (tIdrop.Text == "macrofile"))
+                            {
+                                int SwapOrCopy = -1;
+                                if (e.Effect == DragDropEffects.Link)
+                                    SwapOrCopy = 1;
+                                else if (e.Effect == DragDropEffects.Copy)
+                                    SwapOrCopy = 2;
+                                HandleBarsToBarsOrFile(dragNode, dropNode, SwapOrCopy);
+                            }
+                            #endregion
+                        }
+                        else if (tIdrag.Type == "book")
+                        {
+                            #region if "book"
+                            if (tIdrop.Type == "book") // replace or copy over existing book
+                            {
+                                int SwapOrCopy = -1;
+                                if (e.Effect == DragDropEffects.Link)
+                                    SwapOrCopy = 1;
+                                else if (e.Effect == DragDropEffects.Copy)
+                                    SwapOrCopy = 2;
+
+                                HandleBookToBook(dragNode, dropNode, SwapOrCopy);
+                            }
+                            #endregion
+                            #region if "char", "folder", "template", "main"
+                            else if ((tIdrop.Type == "char") || (tIdrop.Type == "main") ||
+                                    (tIdrop.Type == "folder") || (tIdrop.Type == "template"))
+                            {
+                                #region If Swapping, cancel (Only can swap books)
+                                if (e.Effect == DragDropEffects.Link)
+                                {
+                                    LogMessage.Log("..DragDrop: Attempt to Swap book -> a folder type, unsupported");
+                                }
+                                #endregion
+                                #region If valid Copy to folder, char, template
+                                else if (e.Effect == DragDropEffects.Copy)
+                                {
+                                    HandleBookToOthers(dragNode, dropNode);
+                                }
+                                #endregion
+                                #region DEBUG?: Everything else.
+                                else
+                                {
+                                    LogMessage.Log("..DragDrop: Unsupported event, e.effect is not Swap or Copy");
+                                }
+                                #endregion
+                            }
+                            #endregion
+                        }
+                        else if ((tIdrag.Type == "char") || (tIdrag.Type == "folder") || (tIdrag.Type == "main"))
+                        {
+                            #region DONE -- need Notification Screen? if "char" or "folder"
+                            LogMessage.Log("DragDrop: char|folder");
+                            if ((tIdrop.Type == "char") || (tIdrop.Type == "folder") ||
+                                (tIdrop.Type == "template") || (tIdrop.Type == "main"))
+                            {
+                                HandleCharOrFolder(dragNode, dropNode);
+                            }
+                            else LogMessage.Log("Invalid Drop Type {0} for dropping \"char\" node", tIdrop.Type);
+                            #endregion
+                        }
+                        else
+                        {
+                            #region DONE: Unhandled situations
+                            if (e.Effect == DragDropEffects.Link) // Swap it.
+                            {
+                                MessageBox.Show("You can't swap that with that!", "Drag & Drop: Unsupported Combination", MessageBoxButtons.OK, MessageBoxIcon.Exclamation, MessageBoxDefaultButton.Button1);
+                                LogMessage.Log("..Drag & Drop Error, Unsupported Source/Target (Link)");
+                            }
+                            else if (e.Effect == DragDropEffects.Copy)
+                            {
+                                MessageBox.Show("You can't copy that there!", "Drag & Drop: Unsupported Combination", MessageBoxButtons.OK, MessageBoxIcon.Exclamation, MessageBoxDefaultButton.Button1);
+                                LogMessage.Log("..Drag & Drop Error, Unsupported Source/Target Combination (Copy)");
+                            }
+                            else // Everything Else
+                            {
+                                MessageBox.Show("OMGWTFBBQ! WHAT DID YOU DO?!?!\r\nUmm, You should NOT have received this message!", "Easy BUG: Contact Developer with exact cause.", MessageBoxButtons.OK, MessageBoxIcon.Exclamation, MessageBoxDefaultButton.Button1);
+                                LogMessage.Log("..ERROR: Copy or Swap not the option given. DragDropEffects: " + e.Effect);
+                            }
+                            #endregion
+                        }
+                    }
+
+                    // On Success, reset these back as well.
+                    ChangeButtonNames(this.originalNode);
+                    FillForm(this.originalNode); // Fill the Form with original Node just in case
+                    //  -- Reset TreeView
+                    RawSelect(this.originalNode);
+                    this.originalNode = null;
+                    this.RestoreCursor();
+                    tree.EndUpdate();
+                    LogMessage.Log("DragDrop END: Drop Attempt Done.");
+                }
+                else
+                {
+                    // should not happen
+                    LogMessage.Log("Stop modifying the program, you got an unaccounted for situation");
+                }
             }
             catch (Exception ex)
             {
-                LogMessage.LogF("ItemDrag event: " + ex.Message);
+                LogMessage.LogF("DragDrop event: " + ex.Message);
             }
         }
 
@@ -5347,8 +5470,8 @@ namespace FFXI_ME_v2
                 #endregion
             }
 
-            tmsi[13] = new ToolStripMenuItem("Save All Macro Sets", Resources.SaveAllHS, saveAllToolStripMenuItem_Click);
-            tmsi[14] = new ToolStripMenuItem("Reload All Macro Sets", Resources.ReloadAll, ReloadAllToolStripMenuItem_Click);
+            tmsi[13] = new ToolStripMenuItem("Save All Changes", Resources.SaveAllHS, saveAllToolStripMenuItem_Click);
+            tmsi[14] = new ToolStripMenuItem("Revert All Unsaved Changes", Resources.ReloadAll, ReloadAllToolStripMenuItem_Click);
 
             #endregion
             #region Show Right-Click Menu
@@ -6446,7 +6569,7 @@ namespace FFXI_ME_v2
                     // if it exists and there's at least one character
                     // as the "alt name" for the char folder
                     // pull it and set the Text BEFORE setting up BeginEdit
-                    if (start < end)
+                    if ((start != -1) && (start < end))
                     {
                         tN.Text = tN.Text.Substring(start + 1, end - (start + 1));
                     }
@@ -6700,7 +6823,7 @@ namespace FFXI_ME_v2
                                 {
                                     for (int drc_index = 0; drc_index < DeleteRenameChanges.Count; drc_index++)
                                     {
-                                        if (DeleteRenameChanges[drc_index].Text == newFolderPath)
+                                        if (DeleteRenameChanges[drc_index].Text == newFolderPath) // if previously have deleted that directory, skip deletion.
                                         {
                                             DeleteRenameChanges[drc_index].Type = "Skip";
                                         }
@@ -6758,13 +6881,13 @@ namespace FFXI_ME_v2
                     int drc_index = 0;
                     for (; drc_index < DeleteRenameChanges.Count; drc_index++)
                     {
-                        if (DeleteRenameChanges[drc_index].Text == tI.Text)
+                        if (DeleteRenameChanges[drc_index].Text == tI.Text)  // if folder is found in list, if it's previously a Delete_Folder or a Skip, set to Delete_Folder anyway.
                         {
                             DeleteRenameChanges[drc_index].Type = mi.Name;
                             break;
                         }
                     }
-                    if (drc_index >= DeleteRenameChanges.Count)
+                    if (drc_index >= DeleteRenameChanges.Count) // if it's not found, add it as a Delete_Folder
                     {
                         DeleteRenameChanges.Add(new TagInfo(mi.Name, tI.Text));
                     }
@@ -6943,38 +7066,14 @@ namespace FFXI_ME_v2
                 return;
             }
 
-            this.SetWaitCursor();
-
             TreeNode tN = ((ToolStripMenuItem)sender).Tag as TreeNode;
+
             if (tN == null)
                 tN = this.treeView.SelectedNode;
 
-            CMacroFile cmf = FindMacroFileByNode(tN);
-            CMacro cm = FindMacroByNode(tN);
-
-            if ((cm == null) && (cmf != null))
-                cm = GetCurrentMacro(cmf);
-
-            if (cm != null)
-                SaveToMemory(cm);
-
-            if (cmf != null)
-            {
-                if (cmf.Save() == true)
-                {
-                    MessageBox.Show(cmf.fName + " saved successfully.", "You have been Saved!");
-                    LogMessage.Log(".." + cmf.fName + " saved successfully.");
-                }
-                else
-                {
-                    MessageBox.Show(cmf.fName + " could NOT be saved!", "Error while saving");
-                    LogMessage.Log(".." + cmf.fName + " saved failed.");
-                }
-            }
-            else MessageBox.Show("You must open a folder or file first in order to Save!", "Error while saving");
-            
-            this.RestoreCursor();
+            SaveSingleMacroFile(tN);
         }
+
         // Separator
         private void ReloadThisToCurrentToolStripMenuItem_Click(object sender, EventArgs e)
         {
@@ -8727,15 +8826,11 @@ namespace FFXI_ME_v2
                         (cb == null) ? "<<Unknown>>" : Utilitiies.EllipsifyPath(cb.fName, 60));
                 }
                 else if (this._Type == "Delete_Folder")
-                {
                     return String.Format("Delete folder {0} and all subfolders and files?",
                         Utilitiies.EllipsifyPath(this._Text, 60));
-                }
                 else if (this._Type == "Delete_File")
-                {
                     return String.Format("Delete file {0}?", Utilitiies.EllipsifyPath(this._Text, 60));
-                }
-                return base.ToString();
+                return String.Format("Type: '{0}' Text: '{1}' Obj1 '{2}' Obj2 '{3}'", this._Type, this._Text, this._Obj1.GetType(), this._Obj2.GetType());
             }
 
             static public TagInfo GetTagInfo(Object obj)
@@ -8811,7 +8906,7 @@ namespace FFXI_ME_v2
 
         private void SaveAllMacroFilesMenuItem_Click(object sender, EventArgs e)
         {
-            SaveAllMacroSets(false, false);
+            SaveAllChanges(true, false);
         }
     }
 

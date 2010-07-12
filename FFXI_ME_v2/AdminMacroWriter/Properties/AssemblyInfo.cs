@@ -1,17 +1,16 @@
 ﻿using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using System.Resources;
 
 // General Information about an assembly is controlled through the following 
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
-[assembly: AssemblyTitle("Yekyaa's FFXIEncoding")]
-[assembly: AssemblyDescription("FFXI Encoding with Splash Screen for use with FFXI ME! v2")]
+[assembly: AssemblyTitle("AdminMacroWriter")]
+[assembly: AssemblyDescription("Program to require elevation for updating files and filesystem structure within protected directories, for use with FFXI ME! v2.  Not necessary if FFXI ME! v2 is run with admin rights.")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("Baggett Enterprises, Inc.")]
-[assembly: AssemblyProduct("FFXI Encoding DLL")]
-[assembly: AssemblyCopyright("Copyright © Chris Baggett 2007-2010")]
+[assembly: AssemblyProduct("Administrative Macro Writer for FFXI ME!")]
+[assembly: AssemblyCopyright("Copyright © Chris Baggett 2010")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 
@@ -21,7 +20,7 @@ using System.Resources;
 [assembly: ComVisible(false)]
 
 // The following GUID is for the ID of the typelib if this project is exposed to COM
-[assembly: Guid("60b4a942-69a1-46c2-8634-a7a55f4981fb")]
+[assembly: Guid("c154d4f4-5ae4-4b39-bdc7-fe4b6d4fda40")]
 
 // Version information for an assembly consists of the following four values:
 //
@@ -33,6 +32,5 @@ using System.Resources;
 // You can specify all the values or you can default the Build and Revision Numbers 
 // by using the '*' as shown below:
 // [assembly: AssemblyVersion("1.0.*")]
-[assembly: AssemblyVersion("2.2010.7.1")]
-[assembly: AssemblyFileVersion("2.2010.7.1")]
-[assembly: NeutralResourcesLanguageAttribute("en")]
+[assembly: AssemblyVersion("1.0.0.0")]
+[assembly: AssemblyFileVersion("1.0.0.0")]
