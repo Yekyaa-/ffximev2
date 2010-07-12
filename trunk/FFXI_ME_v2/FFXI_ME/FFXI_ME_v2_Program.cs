@@ -31,7 +31,24 @@ namespace FFXI_ME_v2
                 return;
             }
 
-            Preferences.PathToOpen.Clear();
+            try
+            {
+
+                if (Preferences.PathToOpen != null)
+                    Preferences.PathToOpen.Clear();
+            }
+            catch
+            {
+                if (MessageBox.Show("Did you remove the Yekyaa.FFXIEncoding.dll file from the program's directory?", "WTF?!", MessageBoxButtons.YesNo, MessageBoxIcon.Error) == DialogResult.Yes)
+                {
+                    MessageBox.Show("You should probably get that fixed...", "Yeah, about that...", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                }
+                else
+                {
+                    MessageBox.Show("Then I have no idea what you did to crash this program...", "I still think you shouldn't use this program.", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                }
+                return;
+            }
 
             for (int i = 0; i < args.Length; i++)
             {

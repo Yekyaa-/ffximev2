@@ -1,12 +1,8 @@
 using System;
 using System.IO;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
-using System.Drawing;
+using System.Security.Cryptography;
 using System.Text;
 using System.Windows.Forms;
-using System.Security.Cryptography;
 using Yekyaa.FFXIEncoding;
 
 namespace FFXI_ME_v2
@@ -133,23 +129,28 @@ namespace FFXI_ME_v2
 
             public bool Save()
             {
-                bool Success = true;
+                return this.Save(this._fName);
+            }
+
+            public bool Save(String filename)
+            {
+                bool Error = false;
                 // if filename is not empty
-                if (this._fName != String.Empty)
+                if (filename != String.Empty)
                 {
                     BinaryWriter br_fi = null;
                     byte[] tbyte = new byte[320];
                     try
                     {
                         // GetDirectoryName throws PathTooLongException to exit from here safely
-                        String dirName = Path.GetDirectoryName(this.fName);
+                        String dirName = Path.GetDirectoryName(filename);
 
                         if ((dirName != null) && !Directory.Exists(dirName))
                         {
                             Directory.CreateDirectory(dirName);
                         }
 
-                        br_fi = new BinaryWriter(File.Open(this._fName, FileMode.Create, FileAccess.Write));
+                        br_fi = new BinaryWriter(File.Open(filename, FileMode.Create, FileAccess.Write));
 
                         for (int s = 0; s < _bookName.Length; s++)
                         {
@@ -185,19 +186,19 @@ namespace FFXI_ME_v2
                     }
                     catch (PathTooLongException e)
                     {
-                        LogMessage.LogF("... BookSave(): Saving {0} encountered an error -- {1}", this._fName, e.Message);
-                        Success = false;
+                        LogMessage.LogF("... BookSave(): Saving {0} encountered an error -- {1}", filename, e.Message);
+                        Error = true;
                     }
                     catch (Exception e)
                     {
-                        LogMessage.LogF("... BookSave(): Saving {0} encountered an unexpected error -- {1}", this._fName, e.Message);
-                        Success = false;
+                        LogMessage.LogF("... BookSave(): Saving {0} encountered an unexpected error -- {1}", filename, e.Message);
+                        Error = true;
                     }
                     if (br_fi != null)
                         br_fi.Close();
                 }
-                else Success = false;
-                return Success;
+                else Error = true;
+                return Error;
             }
 
             public void CopyFrom(CBook cb)
@@ -731,7 +732,7 @@ namespace FFXI_ME_v2
                                 }
                                 catch (System.FormatException)
                                 {
-                                    LogMessage.Log(fileName + ": Number Parsing Error");
+                                    LogMessage.Log(fileName + ": Number Parsing Error (not mcr#.dat, but mcr#xxxxxx.dat");
                                     this.FileNumber = -1;
                                 }
                                 finally
@@ -908,29 +909,33 @@ namespace FFXI_ME_v2
                 FileStream fs = null;
                 try
                 {
+                    if (!Directory.Exists(Path.GetDirectoryName(fileName).TrimEnd('\\')))
+                        Directory.CreateDirectory(Path.GetDirectoryName(fileName).TrimEnd('\\'));
+
                     fs = File.Open(fileName, FileMode.Create, FileAccess.ReadWrite);
                 }
-                catch (DirectoryNotFoundException e)
-                {
-                    String[] fPath = fileName.Split('\\');
-                    Array.Resize(ref fPath, fPath.Length - 1);
-                    String pathtocreate = String.Empty;
-                    foreach (String x in fPath)
-                        pathtocreate += x + "\\";
-                    pathtocreate = pathtocreate.Trim('\\');
-                    LogMessage.Log("{0}: {1} not found, attempting to create.", e.Message, pathtocreate);
-                    try
-                    {
-                        Directory.CreateDirectory(pathtocreate);
-                        fs = File.Open(fileName, FileMode.Create, FileAccess.ReadWrite);
-                        LogMessage.Log("..Success");
-                    }
-                    catch (Exception ex)
-                    {
-                        fs = null;
-                        LogMessage.Log("..Failed, {0} & {1}", e.Message, ex.Message);
-                    }
-                }
+                //catch (DirectoryNotFoundException e)
+                //{
+                //    String[] fPath = fileName.Split('\\');
+                //    Array.Resize(ref fPath, fPath.Length - 1);
+                //    String pathtocreate = String.Empty;
+                //    foreach (String x in fPath)
+                //        pathtocreate += x + "\\";
+                //    pathtocreate = pathtocreate.Trim('\\');
+                //    LogMessage.Log("{0}: {1} not found, attempting to create.", e.Message, pathtocreate);
+                //    try
+                //    {
+                //        Directory.CreateDirectory(pathtocreate);
+                //        fs = File.Open(fileName, FileMode.Create, FileAccess.ReadWrite);
+                //        LogMessage.Log("..Success");
+                //    }
+                //    catch (Exception ex)
+                //    {
+                //        fs = null;
+                //        LogMessage.Log("..Failed, {0} & {1}", e.Message, ex.Message);
+                //        return false;
+                //    }
+                //}
                 catch (Exception e)
                 {
                     LogMessage.Log("Error: {0}", e.Message);
@@ -939,13 +944,15 @@ namespace FFXI_ME_v2
                 BinaryWriter BR = null;
                 if (fs != null)
                     BR = new BinaryWriter(fs);
-                if (BR != null) // Write the header to the new file
+                if ((fs != null) && (BR != null)) // Write the header to the new file
                 {
                     BR.Write((ulong)1); // Write the first of eight bytes with 0x01 then 7 0x00's
                     BR.Write(this.MD5Digest, 0, 16); // Write MD5 hash
                     BR.Write(data, 0, 7600);
                     BR.Close();
+                    fs.Close();
                 }
+                else return false;
                 #endregion
                 this.Changed = false;
                 return true;

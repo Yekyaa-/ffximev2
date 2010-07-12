@@ -1,8 +1,7 @@
 ﻿using System;
-using System.IO;
-using System.Collections;
 using System.Collections.Generic;
 using System.Drawing;
+using System.IO;
 using System.Xml;
 using Yekyaa.FFXIEncoding;
 
@@ -42,15 +41,16 @@ namespace FFXI_ME_v2
                 try
                 {
                     DateTime dt = DateTime.Now;
-                    logName = String.Format("FFXI_MEv2-{0:D4}.{1:D2}.{2:D2}.log",
-                        dt.Year, dt.Month, dt.Day);
-                    logfile = File.CreateText(logName);
+
+                    logName = String.Format("FFXI_MEv2-{0}.log", dt.ToString("yyyy.MM.dd.HH.mm.ss"));
+
+                    if (!Directory.Exists(Preferences.LogFileDirectory))
+                    {
+                        Directory.CreateDirectory(Preferences.LogFileDirectory);
+                    }
+                    logfile = File.CreateText(Preferences.LogFileDirectory + "\\" + logName);
                 }
-                catch
-                {
-                    initialized = false;
-                    logfile = null;
-                }
+                catch { initialized = false; logfile = null; return; }
                 finally
                 {
                     if (logfile != null)
@@ -139,8 +139,8 @@ namespace FFXI_ME_v2
                 }
                 try
                 {
-                    logfile.WriteLine("{0} {1}:{2}", DateTime.Now.ToShortDateString(),
-                        DateTime.Now.ToLongTimeString(), logMessage);
+
+                    logfile.WriteLine("{0}:{1}", DateTime.Now.ToString("yyyy/MM/dd hh:mm:ss.fff tt"), logMessage);
                     logfile.Flush();
                 }
                 catch
@@ -207,6 +207,10 @@ namespace FFXI_ME_v2
         static public String MenuXMLFile = Preferences.AppMyDocsFolderName + "\\menu.xml";
 
         static public String SettingsXMLFile = Preferences.AppMyDocsFolderName + "\\settings.xml";
+
+        static public String LogFileDirectory = Preferences.AppMyDocsFolderName + "\\Logs";
+
+        static public String TasksDirectory = Preferences.AppMyDocsFolderName + "\\Tasks";
 
         /// <summary>
         /// Default Language for what files will be loaded is set to English. (All, Jp, En, Fr, De are all valid) (User Setting)
@@ -332,6 +336,40 @@ namespace FFXI_ME_v2
             return false;
         }
 
+        public static int ReverseComparePaths(String p1, String p2)
+        {
+            if (p1 == null)
+            {
+                if (p2 == null)
+                    return 0;
+                else return 1;
+            }
+            else if (p2 == null)
+            {
+                    return -1;
+            }
+
+            if (Directory.Exists(p1))
+            {
+                if (Directory.Exists(p2))
+                {
+                    return p2.CompareTo(p1);
+                }
+                else if (File.Exists(p2))
+                {
+                    return -1;
+                }
+            }
+            else if (File.Exists(p1))
+            {
+                if (Directory.Exists(p2))
+                    return 1;
+                else if (File.Exists(p2))
+                    return p2.CompareTo(p1);
+            }
+            return 0;
+        }
+
         static public bool AddLocation(String location)
         {
 
@@ -350,6 +388,9 @@ namespace FFXI_ME_v2
 
             if (IsFile(di.Attributes))
             {
+                if (fi.Length != 7624)
+                    return false;
+
                 dir = fi.DirectoryName.TrimEnd('\\');
             }
 
@@ -455,12 +496,15 @@ namespace FFXI_ME_v2
             if (Delete)
                 Preferences.PathToOpen.RemoveAll(Preferences.Deleteable);
 
-            if (Skip)
-                return false;
+            if (!Skip)
+            {
+                if (IsFile(di.Attributes))
+                    Preferences.PathToOpen.Add(fi.FullName);
+                else Preferences.PathToOpen.Add(di.FullName);
 
-            if (IsFile(di.Attributes))
-                Preferences.PathToOpen.Add(fi.FullName);
-            else Preferences.PathToOpen.Add(di.FullName);
+                PathToOpen.Sort(ReverseComparePaths);
+            }
+            else return false;
 
             return true;
         }
