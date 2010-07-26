@@ -34,7 +34,7 @@ namespace FFXI_ME_v2
         /// <summary>
         /// Initializes the LogMessage class by opening or creating the file as necessary.
         /// </summary>
-        static public void Initialize()
+        static public void Initialize(String name)
         {
             lock (locker)
             {
@@ -42,13 +42,13 @@ namespace FFXI_ME_v2
                 {
                     DateTime dt = DateTime.Now;
 
-                    logName = String.Format("FFXI_MEv2-{0}.log", dt.ToString("yyyy.MM.dd.HH.mm.ss"));
+                    logName = String.Format("{0}-{1}.log", name, dt.ToString("yyyy.MM.dd.HH.mm.ss"));
 
                     if (!Directory.Exists(Preferences.LogFileDirectory))
                     {
                         Directory.CreateDirectory(Preferences.LogFileDirectory);
                     }
-                    logfile = File.CreateText(Preferences.LogFileDirectory + "\\" + logName);
+                    logfile = File.CreateText(Preferences.LogFileDirectory + Path.DirectorySeparatorChar + logName);
                 }
                 catch { initialized = false; logfile = null; return; }
                 finally
@@ -202,15 +202,15 @@ namespace FFXI_ME_v2
         /// Stores Full Path of the Program's default User Save location. (Not intended to be saved!) (Internal)
         /// NOTE: DO NOT USE Settings.PutSetting() with this variable!
         /// </summary>
-        static public String AppMyDocsFolderName = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments) + "\\FFXI ME!";
+        static public String AppMyDocsFolderName = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments) + Path.DirectorySeparatorChar + "FFXI ME!";
 
-        static public String MenuXMLFile = Preferences.AppMyDocsFolderName + "\\menu.xml";
+        static public String MenuXMLFile = Preferences.AppMyDocsFolderName + Path.DirectorySeparatorChar + "menu.xml";
 
-        static public String SettingsXMLFile = Preferences.AppMyDocsFolderName + "\\settings.xml";
+        static public String SettingsXMLFile = Preferences.AppMyDocsFolderName + Path.DirectorySeparatorChar + "settings.xml";
 
-        static public String LogFileDirectory = Preferences.AppMyDocsFolderName + "\\Logs";
+        static public String LogFileDirectory = Preferences.AppMyDocsFolderName + Path.DirectorySeparatorChar + "Logs";
 
-        static public String TasksDirectory = Preferences.AppMyDocsFolderName + "\\Tasks";
+        static public String TasksDirectory = Preferences.AppMyDocsFolderName + Path.DirectorySeparatorChar + "Tasks";
 
         /// <summary>
         /// Default Language for what files will be loaded is set to English. (All, Jp, En, Fr, De are all valid) (User Setting)
@@ -235,7 +235,7 @@ namespace FFXI_ME_v2
         /// <summary>
         /// Default Templates folder name (based on location of the "default User Save" location.  This can be saved/modified. (Not implemented as User Setting, yet)
         /// </summary>
-        static public String TemplatesFolderName = AppMyDocsFolderName + "\\Templates";
+        static public String TemplatesFolderName = AppMyDocsFolderName + Path.DirectorySeparatorChar + "Templates";
 
         /// <summary>
         /// Does pressing the Enter key in the Macro Editor create a new line or just skip to the next line? (User Setting)
@@ -750,7 +750,8 @@ namespace FFXI_ME_v2
     {
         #region Settings Variables
         XmlDocument xmlDocument = new XmlDocument();
-        string documentPath = Preferences.SettingsXMLFile;
+        string documentPath = String.Empty; //Preferences.SettingsXMLFile;
+        String MainNode = String.Empty; // "settings";
         #endregion
 
         #region Settings Methods
@@ -813,7 +814,7 @@ namespace FFXI_ME_v2
         /// <returns>TRUE if Node exists and was deleted; FALSE if not found or the NodeType has no Parent to delete it from.</returns>
         public bool DeleteSetting(string xPath)
         {
-            XmlNode xmlNode = xmlDocument.SelectSingleNode("settings/" + xPath);
+            XmlNode xmlNode = xmlDocument.SelectSingleNode(this.MainNode + "/" + xPath);
             
             if ((xmlNode != null) && (xmlNode.ParentNode != null))
             { 
@@ -839,7 +840,7 @@ namespace FFXI_ME_v2
         // Base GetSetting() overload
         public string GetSetting(string xPath, string defaultValue)
         {
-            XmlNode xmlNode = xmlDocument.SelectSingleNode("settings/" + xPath);
+            XmlNode xmlNode = xmlDocument.SelectSingleNode(this.MainNode + "/" + xPath);
             if (xmlNode != null) { return xmlNode.InnerText; }
             else { return defaultValue; }
         }
@@ -856,13 +857,22 @@ namespace FFXI_ME_v2
         // Base PutSetting() overload
         public void PutSetting(string xPath, string value)
         {
-            XmlNode xmlNode = xmlDocument.SelectSingleNode("settings/" + xPath);
-            if (xmlNode == null) { xmlNode = createMissingNode("settings/" + xPath); }
+            XmlNode xmlNode = xmlDocument.SelectSingleNode(this.MainNode + "/" + xPath);
+            if (xmlNode == null) { xmlNode = createMissingNode(this.MainNode + "/" + xPath); }
             xmlNode.InnerText = value;
         }
         #endregion
 
-        #region Settings Methods (SaveSettings)
+        #region Settings Methods (SaveSettings, Close)
+        /// <summary>
+        /// "Closes" the XML file, does NOT save.
+        /// </summary>
+        public void Close()
+        {
+            this.MainNode = String.Empty;
+            this.documentPath = String.Empty;
+        }
+
         /// <summary>
         /// SaveSettings: Needed an implicit call as too many PutSettings close together gave me user-mapped errors.
         /// Required if you expect to write the XML successfully.
@@ -871,18 +881,18 @@ namespace FFXI_ME_v2
         {
             try
             {
-                xmlDocument.Save(documentPath);
+                xmlDocument.Save(this.documentPath);
             }
             catch (IOException)
             {
                 try
                 {
                     System.Threading.Thread.Sleep(250);
-                    xmlDocument.Save(documentPath);
+                    xmlDocument.Save(this.documentPath);
                 }
                 catch (IOException)
                 {
-                    LogMessage.LogF("Unable to save 'settings.XML' successfully due to some user-mapped error issue.");
+                    LogMessage.LogF("Unable to save '{0}' successfully due to some user-mapped error issue.", this.documentPath);
                 }
             }
         }
@@ -894,19 +904,15 @@ namespace FFXI_ME_v2
         /// </summary>
         /// <param name="xPath">Path to search under for child nodes.</param>
         /// <returns>Array of strings with the name of each node under xmlNode xPath.</returns>
-        public string[] GetNodeList(string xPath)
+        public List<String> GetNodeList(string xPath)
         {
-            string[] return_list = null;
-            XmlNode xmlNode = xmlDocument.SelectSingleNode("settings/" + xPath);
-            if (xmlNode == null) { return null; }
-            if (xmlNode.HasChildNodes)
+            List<String> return_list = new List<string>();
+            XmlNode xmlNode = xmlDocument.SelectSingleNode(this.MainNode + "/" + xPath);
+            if ((xmlNode != null) && xmlNode.HasChildNodes)
             {
                 foreach (XmlNode testNode in xmlNode.ChildNodes)
                 {
-                    if (return_list == null)
-                        return_list = new string[1];
-                    else Array.Resize(ref return_list, return_list.Length + 1);
-                    return_list[return_list.Length - 1] = new String(testNode.Name.ToCharArray());
+                    return_list.Add(testNode.Name);
                 }
             }
             return return_list;
@@ -917,7 +923,7 @@ namespace FFXI_ME_v2
             string[] xPathSections = xPath.Split('/');
             string currentXPath = "";
             XmlNode testNode = null;
-            XmlNode currentNode = xmlDocument.SelectSingleNode("settings");
+            XmlNode currentNode = xmlDocument.SelectSingleNode(this.MainNode);
             foreach (string xPathSection in xPathSections)
             {
                 currentXPath += xPathSection;
@@ -937,11 +943,27 @@ namespace FFXI_ME_v2
         #endregion
 
         #region Settings Constructor
-        public Settings()
+        public Settings() : this(Preferences.SettingsXMLFile, "settings", true) { }
+
+        public Settings(String docPath, String mNode, bool Create)
         {
-            try { xmlDocument.Load(documentPath); }
-            catch { xmlDocument.LoadXml("<settings></settings>"); }
+            this.documentPath = docPath;
+            this.MainNode = mNode;
+            {
+                try { xmlDocument.Load(docPath); }
+                catch
+                {
+                    if (Create)
+                        xmlDocument.LoadXml(String.Format("<{0}></{0}>", mNode));
+                    else
+                    {
+                        this.documentPath = String.Empty;
+                        this.MainNode = String.Empty;
+                    }
+                }
+            }
         }
+
         #endregion
     }
 }

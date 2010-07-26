@@ -11,6 +11,7 @@ using System.Xml;
 using FFXI_ME_v2.Properties; // for easier access to Resources
 using Microsoft.Win32;
 using Yekyaa.FFXIEncoding;
+using System.Security.Principal;
 
 namespace FFXI_ME_v2
 {
@@ -29,7 +30,8 @@ namespace FFXI_ME_v2
         /// Command-line option (-o, /o, -options, /options) given, just pop up the Options dialog box.
         /// </summary>
         static public bool ShowOptionsDialog = false;
-
+        static public String XMLFileList = String.Empty;
+        static public bool ProcessXMLFile = false;
         // Tracks Changes of Renames and Deletes
         TagInfo[] NodeUpdatesToDo = new TagInfo[0];
         List<TagInfo> DeleteRenameChanges = new List<TagInfo>();
@@ -331,26 +333,6 @@ namespace FFXI_ME_v2
                 this._FFXIInstallPath = this.ATPhraseLoader.GetRegistryKey();// MainFormGetRegistryKey();
             }
 
-            if (Preferences.PathToOpen.Count <= 0)
-            {
-                if (this.FFXIInstallPath != String.Empty)
-                {
-                    this.OpenFolderDialog.SelectedPath = String.Format("{0}\\USER\\", this.FFXIInstallPath.Trim('\\'));
-                }
-                else
-                {
-                    if (MessageBox.Show("FINAL FANTASY XI Installation not found, Continue?", "FFXI Not Found!", MessageBoxButtons.YesNo, MessageBoxIcon.Warning, MessageBoxDefaultButton.Button1) == DialogResult.No)
-                        this.Close();
-                    else
-                    {
-                        // set a default
-                        this._FFXIInstallPath = @"C:\Program Files\PlayOnline\SquareEnix\FINAL FANTASY XI\";
-                        this.OpenFolderDialog.SelectedPath = @"C:\Program Files\PlayOnline\SquareEnix\FINAL FANTASY XI\USER\";
-                    }
-
-                }
-            }
-            
             if (buttons == null)
                 buttons = new Button[20];
             buttons[0] = buttonCtrl1;
@@ -373,6 +355,29 @@ namespace FFXI_ME_v2
             buttons[17] = buttonAlt8;
             buttons[18] = buttonAlt9;
             buttons[19] = buttonAlt0;
+        }
+
+        private void MainForm_Shown(object sender, EventArgs e)
+        {
+            if (Preferences.PathToOpen.Count <= 0)
+            {
+                if (this.FFXIInstallPath != String.Empty)
+                {
+                    this.OpenFolderDialog.SelectedPath = String.Format("{0}\\USER\\", this.FFXIInstallPath.Trim('\\'));
+                }
+                else
+                {
+                    if (MessageBox.Show("FINAL FANTASY XI Installation not found, Continue?", "FFXI Not Found!", MessageBoxButtons.YesNo, MessageBoxIcon.Warning, MessageBoxDefaultButton.Button1) == DialogResult.No)
+                        this.Close();
+                    else
+                    {
+                        // set a default
+                        this._FFXIInstallPath = @"C:\Program Files\PlayOnline\SquareEnix\FINAL FANTASY XI\";
+                        this.OpenFolderDialog.SelectedPath = @"C:\Program Files\PlayOnline\SquareEnix\FINAL FANTASY XI\USER\";
+                    }
+
+                }
+            }
 
             if (Preferences.PathToOpen.Count > 0)
             {
@@ -434,7 +439,7 @@ namespace FFXI_ME_v2
                         } while (File.Exists(s));
 
                         if (cmf.Save(s))
-                            XMLToDo.Add(String.Format("<copyfile deletesource=\"true\" source=\"{0}\" dest=\"{1}\" />", s, cmf.fName));
+                            XMLToDo.Add(String.Format("<copyfile{0} source=\"{1}\" dest=\"{2}\" />", Preferences.ShowDebugInfo ? " deletesource=\"true\"" : "", s, cmf.fName));
                         else
                             LogMessage.LogF("...Error while saving {0}, skipping.", cmf.fName);
                     }
@@ -455,7 +460,7 @@ namespace FFXI_ME_v2
                             s = String.Format("{0}\\mcr0x{1:X}.ttl", Preferences.TasksDirectory, rand.Next(1, Int32.MaxValue));
                         } while (File.Exists(s));
                         if (!cb.Save(s))
-                            XMLToDo.Add(String.Format("<copyfile deletesource=\"true\" source=\"{0}\" dest=\"{1}\" />", s, cb.fName));
+                            XMLToDo.Add(String.Format("<copyfile{0} source=\"{1}\" dest=\"{2}\" />", Preferences.ShowDebugInfo ? " deletesource=\"true\"" : "", s, cb.fName));
                         else
                             LogMessage.LogF("...Error while saving {0}, skipping.", cb.fName);
                     }
@@ -1201,7 +1206,8 @@ namespace FFXI_ME_v2
         {
             if (MacroFiles.Count < 1)
             {
-                MessageBox.Show("You must open a folder or file first in order to save anything at all!", "Nothing to save.");
+                if (!Exiting)
+                    MessageBox.Show("You must open a folder or file first in order to save anything at all!", "Nothing to save.");
                 return new FormClosingEventArgs(CloseReason.None, false);
             }
 
@@ -1421,7 +1427,7 @@ namespace FFXI_ME_v2
                             }
                         }
 
-                        if (Error && XMLToDo.Count > 1)
+                        if (Error && XMLToDo.Count >= 1)
                         {
                             Error = ProcessXMLToDo();
                         }
@@ -1456,6 +1462,7 @@ namespace FFXI_ME_v2
         private bool ProcessXMLToDo()
         {
             bool Error = true;
+            bool deletexml = !Preferences.ShowDebugInfo; // if show debug info is true, then we also don't want to delete xml files
             #region If we were unable to make certain changes due to Access Restrictions or unknown events
             try
             {
@@ -1478,16 +1485,17 @@ namespace FFXI_ME_v2
 
                 if (fi != null)
                 {
-                    fi.WriteLine("<filelist deletexml=\"true\">"); // add deletexml=\"true\" to delete xml when done
+                   fi.WriteLine("<filelist{0}>", (deletexml) ? " deletexml=\"true\"" : ""); // add deletexml=\"true\" to delete xml when done
                     foreach (String todo in XMLToDo)
                     {
                         fi.WriteLine(todo);
                     }
                     fi.WriteLine("</filelist>");
                     fi.Close();
-                    if (File.Exists("AdminMacroWriter.exe"))
+
+                    if (File.Exists(Application.ExecutablePath))
                     {
-                        System.Diagnostics.ProcessStartInfo psi = new System.Diagnostics.ProcessStartInfo("AdminMacroWriter.exe", String.Format("\"{0}\"{1}", xmlname, Preferences.ShowDebugInfo ? " /debug" : ""));
+                        System.Diagnostics.ProcessStartInfo psi = new System.Diagnostics.ProcessStartInfo(Application.ExecutablePath, String.Format("/admin=\"{0}\"{1}", xmlname, Preferences.ShowDebugInfo ? " /debug" : ""));
                         if (psi != null)
                         {
                             psi.Verb = "runas";
@@ -1500,11 +1508,11 @@ namespace FFXI_ME_v2
                     }
                     else
                     {
-                        LogMessage.Log("AdminMacroWriter.exe not present, unable to save files to restricted directories!");
-                        MessageBox.Show("AdminMacroWriter.exe is not present, I'm unable to save files to restricted directories.", "Helper file not present!");
+                        LogMessage.Log("{0} not present, unable to save files to restricted directories!", Path.GetFileName(Application.ExecutablePath));
+                        MessageBox.Show(Path.GetFileName(Application.ExecutablePath) + " is not present, I'm unable to save files to restricted directories.", "Helper file not present!");
                     }
 
-                    if (File.Exists(xmlname))
+                    if (deletexml && File.Exists(xmlname))
                     {
                         Error = true; // deletexml is true, but file wasn't deleted, something went wrong
                     }
@@ -2957,8 +2965,8 @@ namespace FFXI_ME_v2
             Preferences.MinimizeToTray = settings.GetSetting("MainProgram/MinimizeToTray", Preferences.MinimizeToTray);
 
             #region Load Character Names, if any
-            String[] CharNodes = settings.GetNodeList("CharacterNames");
-            if ((CharNodes != null) && (CharNodes.Length > 0))
+            List<String> CharNodes = settings.GetNodeList("CharacterNames");
+            if (CharNodes.Count > 0)
             {
                 //for (int cnt = 0; cnt < CharNodes.Length; cnt++)
                 foreach (String CharName in CharNodes)
@@ -2993,8 +3001,8 @@ namespace FFXI_ME_v2
             // backward compatibility for old "node name"
             // new node name "LastLoadedLocations" also accepts files.
             String nodename = "LastLoadedFolders";
-            String[] FolderNodes = settings.GetNodeList(nodename);
-            if (FolderNodes == null)
+            List<String> FolderNodes = settings.GetNodeList(nodename);
+            if (FolderNodes.Count <= 0)
             {
                 nodename = "LastLoadedLocations";
                 FolderNodes = settings.GetNodeList(nodename);
@@ -3002,13 +3010,10 @@ namespace FFXI_ME_v2
 
             if (oldsetting != String.Empty)
             {
-                if (FolderNodes == null)
-                    FolderNodes = new String[1];
-                else Array.Resize(ref FolderNodes, FolderNodes.Length + 1);
-                FolderNodes[FolderNodes.Length - 1] = oldsetting;
+                FolderNodes.Add(oldsetting);
             }
 
-            if ((FolderNodes != null) && (FolderNodes.Length > 0))
+            if (FolderNodes.Count > 0)
             {
                 foreach (String Folder in FolderNodes)
                 {
@@ -7121,16 +7126,31 @@ namespace FFXI_ME_v2
         private void ReloadAllToolStripMenuItem_Click(object sender, EventArgs e)
         {
             LogMessage.Log("Reload All chosen");
-            String tNPath = this.treeView.SelectedNode.Name;
+            String tNName = this.treeView.SelectedNode.Name;
+            String tNFullPath = this.treeView.SelectedNode.FullPath;
+
             OpenFolderMethod(Preferences.PathToOpen);
 
             if ((treeView.Nodes != null) && (treeView.Nodes.Count > 0))
             {
-                TreeNode[] tnarray = this.treeView.Nodes.Find(tNPath, true);
-                if (tnarray.Length > 0)
-                    this.treeView.SelectedNode = tnarray[0];
+                TreeNode[] tnarray = this.treeView.Nodes.Find(tNName, true);
+
+                int i = 0;
+
+                for ( ; i < tnarray.Length; i++)
+                {
+                    if (tnarray[i].FullPath == tNFullPath)
+                    {
+                        break;
+                    }
+                }
+
+                if (i < tnarray.Length)
+                    this.treeView.SelectedNode = tnarray[i];
                 else this.treeView.SelectedNode = this.treeView.Nodes[0];
+
                 this.treeView.SelectedNode.EnsureVisible();
+
                 FillForm();
             }
             LogMessage.Log("..Reload All successful");
@@ -8695,10 +8715,230 @@ namespace FFXI_ME_v2
         #endregion
 
         #region MainForm Constructor : DONE
+        public bool ProcessXMLFileList()
+        {
+            String pathName = String.Empty;
+            String fileName = String.Empty;
+            bool CleanDoc = false;
+
+            LogMessage.Initialize("FFXIME_AdminMacroWriter");
+
+            if (!LogMessage.Initialized)
+            {
+                MessageBox.Show("FATAL ERROR: Unable to initialize LogMessage, Press Enter to exit");
+                return false;
+            }
+
+            // Verify running as administrator
+            if (!(new WindowsPrincipal(WindowsIdentity.GetCurrent()).IsInRole(WindowsBuiltInRole.Administrator)))
+            {
+                LogMessage.Log("Not running as administrator, exiting!");
+                MessageBox.Show("You must be running this task as administrator, exiting.");
+                LogMessage.Close();
+                return false;
+            }
+
+            if (MainForm.XMLFileList == String.Empty)
+            {
+                LogMessage.Log("No filename given, exiting...");
+                MessageBox.Show("No filename given, exiting.");
+                LogMessage.Close();
+                return false;
+            }
+
+            fileName = MainForm.XMLFileList;
+
+            if (!File.Exists(fileName))
+            {
+                LogMessage.Log("{0} doesn't exist...", fileName);
+                MessageBox.Show("Specified XML file doesn't exist, exiting.");
+                LogMessage.Close();
+                return false;
+            }
+
+            FileInfo fi = new FileInfo(fileName);
+            pathName = fi.FullName;
+            XmlDocument xmlDocument = new XmlDocument();
+
+            try
+            {
+                xmlDocument.Load(pathName);
+                StringWriter sw = new StringWriter();
+                XmlTextWriter xmltw = new XmlTextWriter(sw);
+                xmltw.Formatting = Formatting.Indented;
+                xmlDocument.WriteTo(xmltw);
+                xmltw.Close();
+                LogMessage.Log("...Loaded XML successfully.");
+                LogMessage.Log("\r\n" + sw.ToString());
+            }  // file should already exist, if we fail on the Load, exit
+            catch
+            {
+                LogMessage.Log("Unable to XML.Load() XML File");
+                MessageBox.Show("Unable to load XML file, exiting.");
+                LogMessage.Close();
+                return false;
+            }
+
+            LogMessage.Log("Processing file: {0}", pathName);
+
+            XmlNode mainNode = xmlDocument.SelectSingleNode("filelist");
+            if (mainNode != null)
+            {
+                try
+                {
+                    CleanDoc = Boolean.Parse(mainNode.Attributes["deletexml"].Value);
+                    LogMessage.Log("...Delete XML is true");
+                }
+                catch
+                {
+                    CleanDoc = false;
+                }
+            }
+
+            if (!mainNode.HasChildNodes)
+            {
+                LogMessage.Log("main has No Child Nodes...");
+                if (CleanDoc)
+                {
+                    try { File.Delete(pathName); LogMessage.Log("...deleting {0}.", pathName); }
+                    catch { LogMessage.Log("...unable to delete {0}.", pathName); }
+                }
+                LogMessage.Log("...exiting");
+                MessageBox.Show("No Child Nodes found after main node, exiting.");
+                LogMessage.Close();
+                return false;
+            }
+
+            XmlNodeList xnl = mainNode.ChildNodes;
+
+            LogMessage.Log("Processing Nodes...");
+            foreach (XmlNode node in xnl)
+            {
+                XmlAttributeCollection xac = node.Attributes;
+
+                if (node.Name == "deletefolder")
+                {
+                    DirectoryInfo deletedi = new DirectoryInfo(node.InnerXml);
+
+                    if (Directory.Exists(deletedi.FullName))
+                    {
+                        try { Directory.Delete(deletedi.FullName, true); LogMessage.Log("...Delete Folder: {0}", deletedi.FullName); }
+                        catch { LogMessage.Log("...Unable to delete directory: {0}", deletedi.FullName); continue; }
+                    }
+                    else LogMessage.Log("...{0}: Directory doesn't exist, ignoring.", deletedi.FullName);
+                }
+                else if (node.Name == "deletefile")
+                {
+                    FileInfo deletefi = new FileInfo(node.InnerXml);
+                    if (File.Exists(deletefi.FullName))
+                    {
+                        try { File.Delete(deletefi.FullName); LogMessage.Log("...Delete File: {0}", deletefi.FullName); }
+                        catch { LogMessage.Log("...Unable to delete: {0}", deletefi.FullName); continue; }
+                    }
+                    else LogMessage.Log("...{0}: File doesn't exist, ignoring.", deletefi.FullName);
+                }
+                else if (node.Name == "copyfile")
+                {
+                    #region Initialize file-specific variables
+                    String source, dest;
+                    bool CleanSource = false;
+
+                    try { source = xac["source"].Value; }
+                    catch { source = String.Empty; }
+
+                    try { dest = xac["dest"].Value; }
+                    catch { dest = String.Empty; }
+
+                    try { CleanSource = Boolean.Parse(xac["deletesource"].Value); }
+                    catch { CleanSource = false; }
+                    #endregion
+
+                    #region Verify filenames and existence of source
+                    if (source == String.Empty || dest == String.Empty)
+                    {
+                        LogMessage.Log("... Copyfile: Source '{0}' Dest '{1}': One of the files has no name.", source, dest);
+                        continue;
+                    }
+                    else if (!File.Exists(source))
+                    {
+                        LogMessage.Log("... Copyfile: Source '{0}' does not exist, skipping.", source);
+                        continue;
+                    }
+                    #endregion
+
+                    #region Copy a file to another file, possibly delete the source file
+                    try
+                    {
+                        if (!Directory.Exists(Path.GetDirectoryName(dest).TrimEnd('\\')))
+                            Directory.CreateDirectory(Path.GetDirectoryName(dest).TrimEnd('\\'));
+
+                        File.Copy(source, dest, true);
+                        LogMessage.Log("... Copyfile: '{0}' -> '{1}' Success", source, dest);
+                    }
+                    //catch (System.IO.DirectoryNotFoundException)
+                    //{
+                    //    try
+                    //    {
+                    //        Directory.CreateDirectory(Path.GetDirectoryName(dest).TrimEnd('\\'));
+                    //        File.Copy(source, dest, true);
+                    //        LogMessage.Log("... Copyfile: Created path and copied {0} to {1}.", source, dest);
+                    //    }
+                    //    catch (Exception e)
+                    //    {
+                    //        LogMessage.Log("... Copyfile: {0}", e.Message);
+                    //        continue;
+                    //    }
+                    //}
+                    catch (UnauthorizedAccessException uae)
+                    {
+                        LogMessage.Log("... Copyfile: {0}", uae.Message);
+                        continue;
+                    }
+                    catch (Exception exception)
+                    {
+                        LogMessage.Log("... Copyfile: {0}", exception.Message);
+                        continue;
+                    }
+                    if (CleanSource)
+                    {
+                        File.Delete(source);
+                        LogMessage.Log("... Deleted source file {0}.", source);
+                    }
+                    #endregion
+                }
+            }
+            LogMessage.Log("Done processing nodes.");
+            if (CleanDoc)
+            {
+                try
+                {
+                    File.Delete(pathName);
+                    LogMessage.Log("..Deleted file {0}", pathName);
+                }
+                catch (Exception e)
+                {
+                    LogMessage.Log("..{0}: {1}", pathName, e.Message);
+                }
+            }
+            else { LogMessage.Log("..{0}: Not deleting file.", pathName); }
+#if (DEBUG)
+            Console.WriteLine("Program completed successfully, see logfile for specific information.");
+            Console.ReadLine();
+#endif
+            LogMessage.Log("Done processing file.");
+            LogMessage.Close();
+            return true;
+        }
+
         public MainForm()
         {
+            if (MainForm.ProcessXMLFile)
+            {
+                ProcessXMLFileList();
+                return;
+            }
             InitializeComponent();
-            LogMessage.Initialize();
+            LogMessage.Initialize("FFXI_MEv2");
             timer.Interval = 250;
             timer.Tick += new EventHandler(timer_Tick);
 

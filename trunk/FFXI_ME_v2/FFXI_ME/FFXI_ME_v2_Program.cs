@@ -21,52 +21,72 @@ namespace FFXI_ME_v2
         [STAThread]
         static void Main(string[] args)
         {
-            bool instantiated;
-
-            m = new Mutex(false, "Local\\" + "<x_ffxime_x> One Program At A Time!", out instantiated);
-
-            if (!instantiated)
-            {
-                MessageBox.Show("FFXI ME! is already running!", "I can't let you do that, Dave.", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
-                return;
-            }
-
-            try
-            {
-
-                if (Preferences.PathToOpen != null)
-                    Preferences.PathToOpen.Clear();
-            }
-            catch
-            {
-                if (MessageBox.Show("Did you remove the Yekyaa.FFXIEncoding.dll file from the program's directory?", "WTF?!", MessageBoxButtons.YesNo, MessageBoxIcon.Error) == DialogResult.Yes)
-                {
-                    MessageBox.Show("You should probably get that fixed...", "Yeah, about that...", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                }
-                else
-                {
-                    MessageBox.Show("Then I have no idea what you did to crash this program...", "I still think you shouldn't use this program.", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                }
-                return;
-            }
+            MainForm.ProcessXMLFile = false;
+            MainForm.XMLFileList = String.Empty;
 
             for (int i = 0; i < args.Length; i++)
             {
-                if ((args[i] == "/debug") || (args[i] == "-debug"))
+                if (args[i].StartsWith("/admin="))
+                {
+                    //MessageBox.Show(args[i]);
+                    String s = args[i].Substring(7).Trim('\"');
+
+                    if (File.Exists(s))
+                    {
+                        MainForm.XMLFileList = s;
+                        MainForm.ProcessXMLFile = true;
+                    }
+                }
+                else if ((args[i] == "/debug") || (args[i] == "-debug"))
                     Preferences.ShowDebugInfo = true;
-                else if ((args[i] == "/options") || (args[i] == "-options") || 
+                else if ((args[i] == "/options") || (args[i] == "-options") ||
                     (args[i] == "-o") || (args[i] == "/o"))
                     MainForm.ShowOptionsDialog = true;
-                else if (args[i] != String.Empty)
+                else if (!MainForm.ProcessXMLFile && (args[i] != String.Empty))
                 {
-                    Preferences.AddLocation(args[i]);
+                    if (File.Exists(args[i]) || Directory.Exists(args[i]))
+                        Preferences.AddLocation(args[i]);
+                }
+            }
+
+            bool instantiated;
+
+            if (!MainForm.ProcessXMLFile)
+            {
+                m = new Mutex(false, "Local\\" + "<x_ffxime_x> One Program At A Time!", out instantiated);
+
+                if (!instantiated)
+                {
+                    MessageBox.Show("FFXI ME! is already running!", "I can't let you do that, Dave.", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
+                    return;
+                }
+                try
+                {
+                    if (Preferences.PathToOpen != null)
+                        Preferences.PathToOpen.Clear();
+                }
+                catch
+                {
+                    if (MessageBox.Show("Did you remove the Yekyaa.FFXIEncoding.dll file from the program's directory?", "WTF?!", MessageBoxButtons.YesNo, MessageBoxIcon.Error) == DialogResult.Yes)
+                    {
+                        MessageBox.Show("You should probably get that fixed...", "Yeah, about that...", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    }
+                    else
+                    {
+                        MessageBox.Show("Then I have no idea what you did to crash this program...", "I still think you shouldn't use this program.", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    }
+                    return;
                 }
             }
 
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
             Application.DoEvents();
-            Application.Run(new MainForm());
+            Form f = new MainForm();
+            if (MainForm.ProcessXMLFile == false)
+            {
+                Application.Run(f);
+            }
         }
     }
 }
