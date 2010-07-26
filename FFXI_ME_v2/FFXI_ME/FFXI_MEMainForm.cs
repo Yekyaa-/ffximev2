@@ -439,7 +439,7 @@ namespace FFXI_ME_v2
                         } while (File.Exists(s));
 
                         if (cmf.Save(s))
-                            XMLToDo.Add(String.Format("<copyfile{0} source=\"{1}\" dest=\"{2}\" />", Preferences.ShowDebugInfo ? " deletesource=\"true\"" : "", s, cmf.fName));
+                            XMLToDo.Add(String.Format("<copyfile{0} source=\"{1}\" dest=\"{2}\" />", Preferences.ShowDebugInfo ? "" : " deletesource=\"true\"", s, cmf.fName));
                         else
                             LogMessage.LogF("...Error while saving {0}, skipping.", cmf.fName);
                     }
@@ -460,7 +460,7 @@ namespace FFXI_ME_v2
                             s = String.Format("{0}\\mcr0x{1:X}.ttl", Preferences.TasksDirectory, rand.Next(1, Int32.MaxValue));
                         } while (File.Exists(s));
                         if (!cb.Save(s))
-                            XMLToDo.Add(String.Format("<copyfile{0} source=\"{1}\" dest=\"{2}\" />", Preferences.ShowDebugInfo ? " deletesource=\"true\"" : "", s, cb.fName));
+                            XMLToDo.Add(String.Format("<copyfile{0} source=\"{1}\" dest=\"{2}\" />", Preferences.ShowDebugInfo ? "" : " deletesource=\"true\"", s, cb.fName));
                         else
                             LogMessage.LogF("...Error while saving {0}, skipping.", cb.fName);
                     }
@@ -1432,7 +1432,7 @@ namespace FFXI_ME_v2
                             Error = ProcessXMLToDo();
                         }
                         LogMessage.LogF("...Save{0} Completed {1}{2}.", (!OnlyOneChange && FilesOnly) ? " All Files" : (!OnlyOneChange && !FilesOnly) ?  " All Changes" : "", 
-                                        (Error == true) ? "With Errors" : "Successfully.", Exiting ? ", Exiting" : "");
+                                        (Error == true) ? "With Errors" : "Successfully", Exiting ? ", Exiting" : "");
                     }
                         #endregion
                     else
@@ -1481,11 +1481,14 @@ namespace FFXI_ME_v2
                     fi = File.CreateText(xmlname);
                 }
                 catch (Exception ex)
-                { LogMessage.LogF("Unable to create Tasks file or directory: {0}", ex.Message); fi = null; }
+                { 
+                    LogMessage.LogF("Unable to create Tasks file or directory: {0}", ex.Message); 
+                    fi = null; 
+                }
 
                 if (fi != null)
                 {
-                   fi.WriteLine("<filelist{0}>", (deletexml) ? " deletexml=\"true\"" : ""); // add deletexml=\"true\" to delete xml when done
+                    fi.WriteLine("<filelist{0}>", (deletexml) ? " deletexml=\"true\"" : ""); // add deletexml=\"true\" to delete xml when done
                     foreach (String todo in XMLToDo)
                     {
                         fi.WriteLine(todo);
@@ -1498,18 +1501,19 @@ namespace FFXI_ME_v2
                         System.Diagnostics.ProcessStartInfo psi = new System.Diagnostics.ProcessStartInfo(Application.ExecutablePath, String.Format("/admin=\"{0}\"{1}", xmlname, Preferences.ShowDebugInfo ? " /debug" : ""));
                         if (psi != null)
                         {
+                            Error = false;
                             psi.Verb = "runas";
                             psi.CreateNoWindow = true;
                             psi.ErrorDialog = true;
                             psi.WindowStyle = System.Diagnostics.ProcessWindowStyle.Hidden;
                             System.Diagnostics.Process.Start(psi);
-                            Error = false;
                         }
                     }
                     else
                     {
                         LogMessage.Log("{0} not present, unable to save files to restricted directories!", Path.GetFileName(Application.ExecutablePath));
                         MessageBox.Show(Path.GetFileName(Application.ExecutablePath) + " is not present, I'm unable to save files to restricted directories.", "Helper file not present!");
+                        Error = true;
                     }
 
                     if (deletexml && File.Exists(xmlname))
@@ -1517,10 +1521,10 @@ namespace FFXI_ME_v2
                         Error = true; // deletexml is true, but file wasn't deleted, something went wrong
                     }
                 }
-                else Error = true;
             }
-            catch
+            catch (Exception e)
             {
+                LogMessage.LogF("Unhandled Exception (ProcessXMLToDo): " + e.Message);
                 Error = true;
             }
             #endregion
@@ -2052,7 +2056,7 @@ namespace FFXI_ME_v2
                             try
                             {
                                 if (!recurse_form.Disposing)
-                                    recurse_form.Invoke(new UpdateUIHandler(recurse_form.UpdateUI), new object[] { "Examining File :\r\n'" + Utilitiies.EllipsifyPath(fi.FullName, 35) + "'" });
+                                    recurse_form.Invoke(new UpdateUIHandler(recurse_form.UpdateUI), new object[] { "Examining File :\r\n'" + Utilities.EllipsifyPath(fi.FullName, 35) + "'" });
                             }
                             catch
                             {
@@ -2187,7 +2191,7 @@ namespace FFXI_ME_v2
 
             try
             {
-                recurse_form.Invoke(new UpdateUIHandler(recurse_form.UpdateUI), new object[] { "Searching Directory :\r\n'" + Utilitiies.EllipsifyPath(dirList[index], trim_len) + "'" });
+                recurse_form.Invoke(new UpdateUIHandler(recurse_form.UpdateUI), new object[] { "Searching Directory :\r\n'" + Utilities.EllipsifyPath(dirList[index], trim_len) + "'" });
             }
             catch
             {
@@ -2205,7 +2209,7 @@ namespace FFXI_ME_v2
 
                         try
                         {
-                            recurse_form.Invoke(new UpdateUIHandler(recurse_form.UpdateUI), new object[] { "Searching Directory :\r\n'" + Utilitiies.EllipsifyPath(dir, trim_len) + "'" });
+                            recurse_form.Invoke(new UpdateUIHandler(recurse_form.UpdateUI), new object[] { "Searching Directory :\r\n'" + Utilities.EllipsifyPath(dir, trim_len) + "'" });
                         }
                         catch
                         {
@@ -2243,7 +2247,7 @@ namespace FFXI_ME_v2
                             try
                             {
                                 if (!recurse_form.Disposing)
-                                    recurse_form.Invoke(new UpdateUIHandler(recurse_form.UpdateUI), new object[] { "Examining File :\r\n'" + Utilitiies.EllipsifyPath(file, trim_len) + "'" });
+                                    recurse_form.Invoke(new UpdateUIHandler(recurse_form.UpdateUI), new object[] { "Examining File :\r\n'" + Utilities.EllipsifyPath(file, trim_len) + "'" });
                             }
                             catch
                             {
@@ -5759,7 +5763,7 @@ namespace FFXI_ME_v2
                             newName = Path.GetFullPath(newName);
                             if (draglist.Length > FILES_TO_HIDE)
                             {
-                                UpdateNotifyUI(Utilitiies.EllipsifyPath(newName), x);
+                                UpdateNotifyUI(Utilities.EllipsifyPath(newName), x);
                                 Thread.Sleep(25);
                             }
                             CMacroFile cmf_drop = FindMacroFileExactByFileName(newName);
@@ -5777,7 +5781,7 @@ namespace FFXI_ME_v2
                         {
                             LogMessage.Log("HandleBookToOthers(): Filename {0} Error -- {1}", newName, e.Message);
                             Array.Resize(ref errorFiles, errorFiles.Length + 1);
-                            errorFiles[errorFiles.Length - 1] = Utilitiies.EllipsifyPath(newName);
+                            errorFiles[errorFiles.Length - 1] = Utilities.EllipsifyPath(newName);
                             errorString += errorFiles[errorFiles.Length - 1] + "\r\n";
                         }
                         catch (Exception e)
@@ -6014,7 +6018,7 @@ namespace FFXI_ME_v2
                 #region For each item in the draglist, Swap/Copy it with/to the corresponding droplist
                 if (draglist.Length > FILES_TO_HIDE)
                 {
-                    UpdateNotifyUI(Utilitiies.EllipsifyPath(draglist[i].fName), i);
+                    UpdateNotifyUI(Utilities.EllipsifyPath(draglist[i].fName), i);
                     Thread.Sleep(25);
                 }
 
@@ -6194,7 +6198,7 @@ namespace FFXI_ME_v2
                         if (ttlFileList[0].Type == "Overwrite_TTL")
                         {
                             DialogResult dr = MessageBox.Show(
-                                    String.Format("Book name file found in both directories,\r\nSource: {0}\r\nDestination: {1}\r\n\r\nOverwite the destination Book File?", Utilitiies.EllipsifyPath(cbold.fName, 60), Utilitiies.EllipsifyPath(cbnew.fName, 60)),
+                                    String.Format("Book name file found in both directories,\r\nSource: {0}\r\nDestination: {1}\r\n\r\nOverwite the destination Book File?", Utilities.EllipsifyPath(cbold.fName, 60), Utilities.EllipsifyPath(cbnew.fName, 60)),
                                     "Overwrite?",
                                     MessageBoxButtons.YesNoCancel,
                                     MessageBoxIcon.Question,
@@ -6212,7 +6216,7 @@ namespace FFXI_ME_v2
                         else if (ttlFileList[0].Type == "Copy_TTL")
                         {
                             DialogResult dr = MessageBox.Show(
-                                    String.Format("Book name file found in source directory:\r\n'{0}',\r\n\r\nCopy to the destination directory:\r\n'{1}'?", Utilitiies.EllipsifyPath(cbold.fName, 60), Utilitiies.EllipsifyPath(path, 60)),
+                                    String.Format("Book name file found in source directory:\r\n'{0}',\r\n\r\nCopy to the destination directory:\r\n'{1}'?", Utilities.EllipsifyPath(cbold.fName, 60), Utilities.EllipsifyPath(path, 60)),
                                     "Copy?",
                                     MessageBoxButtons.YesNoCancel,
                                     MessageBoxIcon.Question,
@@ -6292,7 +6296,7 @@ namespace FFXI_ME_v2
                     #region Update NotifyForm UI
                     if (draglist.Length > FILES_TO_HIDE)
                     {
-                        UpdateNotifyUI(Utilitiies.EllipsifyPath(draglist[i].fName), i);
+                        UpdateNotifyUI(Utilities.EllipsifyPath(draglist[i].fName), i);
                         Thread.Sleep(25);
                     }
                     #endregion
@@ -6325,7 +6329,7 @@ namespace FFXI_ME_v2
                         #region Setup for error processing for Too long filenames
                         LogMessage.Log("..HandleCharOrFolder(): Path is too long, could not copy: {0}, skipping -- Error: {1}", newpath, e.Message);
                         Array.Resize(ref errorFiles, errorFiles.Length + 1);
-                        errorFiles[errorFiles.Length - 1] = Utilitiies.EllipsifyPath(newpath);
+                        errorFiles[errorFiles.Length - 1] = Utilities.EllipsifyPath(newpath);
                         errorString += errorFiles[errorFiles.Length - 1] + "\r\n";
                         #endregion
                     }
@@ -6334,7 +6338,7 @@ namespace FFXI_ME_v2
                         #region Generic Error
                         LogMessage.LogF("..HandleCharOrFolder(): Unexpected error -- {0}, ignoring.", e.Message);
                         Array.Resize(ref errorFiles, errorFiles.Length + 1);
-                        errorFiles[errorFiles.Length - 1] = Utilitiies.EllipsifyPath(newpath);
+                        errorFiles[errorFiles.Length - 1] = Utilities.EllipsifyPath(newpath);
                         errorString += errorFiles[errorFiles.Length - 1] + "\r\n";
                         #endregion
                     }
@@ -8732,7 +8736,7 @@ namespace FFXI_ME_v2
             // Verify running as administrator
             if (!(new WindowsPrincipal(WindowsIdentity.GetCurrent()).IsInRole(WindowsBuiltInRole.Administrator)))
             {
-                LogMessage.Log("Not running as administrator, exiting!");
+                LogMessage.LogF("Not running as administrator, exiting!");
                 MessageBox.Show("You must be running this task as administrator, exiting.");
                 LogMessage.Close();
                 return false;
@@ -8740,7 +8744,7 @@ namespace FFXI_ME_v2
 
             if (MainForm.XMLFileList == String.Empty)
             {
-                LogMessage.Log("No filename given, exiting...");
+                LogMessage.LogF("No filename given, exiting...");
                 MessageBox.Show("No filename given, exiting.");
                 LogMessage.Close();
                 return false;
@@ -8750,7 +8754,7 @@ namespace FFXI_ME_v2
 
             if (!File.Exists(fileName))
             {
-                LogMessage.Log("{0} doesn't exist...", fileName);
+                LogMessage.LogF("{0} doesn't exist...", Utilities.EllipsifyPath(fileName));
                 MessageBox.Show("Specified XML file doesn't exist, exiting.");
                 LogMessage.Close();
                 return false;
@@ -8763,23 +8767,25 @@ namespace FFXI_ME_v2
             try
             {
                 xmlDocument.Load(pathName);
+
                 StringWriter sw = new StringWriter();
                 XmlTextWriter xmltw = new XmlTextWriter(sw);
                 xmltw.Formatting = Formatting.Indented;
                 xmlDocument.WriteTo(xmltw);
                 xmltw.Close();
-                LogMessage.Log("...Loaded XML successfully.");
+                
+                LogMessage.LogF("...Loaded XML successfully.");
                 LogMessage.Log("\r\n" + sw.ToString());
             }  // file should already exist, if we fail on the Load, exit
             catch
             {
-                LogMessage.Log("Unable to XML.Load() XML File");
+                LogMessage.LogF("Unable to XML.Load() XML File");
                 MessageBox.Show("Unable to load XML file, exiting.");
                 LogMessage.Close();
                 return false;
             }
 
-            LogMessage.Log("Processing file: {0}", pathName);
+            LogMessage.LogF("Processing file: {0}", Utilities.EllipsifyPath(pathName));
 
             XmlNode mainNode = xmlDocument.SelectSingleNode("filelist");
             if (mainNode != null)
@@ -8787,7 +8793,7 @@ namespace FFXI_ME_v2
                 try
                 {
                     CleanDoc = Boolean.Parse(mainNode.Attributes["deletexml"].Value);
-                    LogMessage.Log("...Delete XML is true");
+                    LogMessage.LogF("...Delete XML is true");
                 }
                 catch
                 {
@@ -8797,13 +8803,13 @@ namespace FFXI_ME_v2
 
             if (!mainNode.HasChildNodes)
             {
-                LogMessage.Log("main has No Child Nodes...");
+                LogMessage.LogF("main has No Child Nodes...");
                 if (CleanDoc)
                 {
-                    try { File.Delete(pathName); LogMessage.Log("...deleting {0}.", pathName); }
-                    catch { LogMessage.Log("...unable to delete {0}.", pathName); }
+                    try { File.Delete(pathName); LogMessage.LogF("...deleting {0}.", Utilities.EllipsifyPath(pathName)); }
+                    catch { LogMessage.LogF("...unable to delete {0}.", Utilities.EllipsifyPath(pathName)); }
                 }
-                LogMessage.Log("...exiting");
+                LogMessage.LogF("...exiting");
                 MessageBox.Show("No Child Nodes found after main node, exiting.");
                 LogMessage.Close();
                 return false;
@@ -8811,7 +8817,7 @@ namespace FFXI_ME_v2
 
             XmlNodeList xnl = mainNode.ChildNodes;
 
-            LogMessage.Log("Processing Nodes...");
+            LogMessage.LogF("Processing Nodes...");
             foreach (XmlNode node in xnl)
             {
                 XmlAttributeCollection xac = node.Attributes;
@@ -8822,20 +8828,20 @@ namespace FFXI_ME_v2
 
                     if (Directory.Exists(deletedi.FullName))
                     {
-                        try { Directory.Delete(deletedi.FullName, true); LogMessage.Log("...Delete Folder: {0}", deletedi.FullName); }
-                        catch { LogMessage.Log("...Unable to delete directory: {0}", deletedi.FullName); continue; }
+                        try { Directory.Delete(deletedi.FullName, true); LogMessage.LogF("...Delete Folder: {0}", Utilities.EllipsifyPath(deletedi.FullName)); }
+                        catch { LogMessage.LogF("...Unable to delete directory: {0}", Utilities.EllipsifyPath(deletedi.FullName)); continue; }
                     }
-                    else LogMessage.Log("...{0}: Directory doesn't exist, ignoring.", deletedi.FullName);
+                    else LogMessage.LogF("...{0}: Directory doesn't exist, ignoring.", Utilities.EllipsifyPath(deletedi.FullName));
                 }
                 else if (node.Name == "deletefile")
                 {
                     FileInfo deletefi = new FileInfo(node.InnerXml);
                     if (File.Exists(deletefi.FullName))
                     {
-                        try { File.Delete(deletefi.FullName); LogMessage.Log("...Delete File: {0}", deletefi.FullName); }
-                        catch { LogMessage.Log("...Unable to delete: {0}", deletefi.FullName); continue; }
+                        try { File.Delete(deletefi.FullName); LogMessage.LogF("...Delete File: {0}", Utilities.EllipsifyPath(deletefi.FullName)); }
+                        catch { LogMessage.LogF("...Unable to delete: {0}", Utilities.EllipsifyPath(deletefi.FullName)); continue; }
                     }
-                    else LogMessage.Log("...{0}: File doesn't exist, ignoring.", deletefi.FullName);
+                    else LogMessage.LogF("...{0}: File doesn't exist, ignoring.", Utilities.EllipsifyPath(deletefi.FullName));
                 }
                 else if (node.Name == "copyfile")
                 {
@@ -8856,12 +8862,12 @@ namespace FFXI_ME_v2
                     #region Verify filenames and existence of source
                     if (source == String.Empty || dest == String.Empty)
                     {
-                        LogMessage.Log("... Copyfile: Source '{0}' Dest '{1}': One of the files has no name.", source, dest);
+                        LogMessage.LogF("... Copyfile: Source '{0}' Dest '{1}': One of the files has no name.", Utilities.EllipsifyPath(source, 25), Utilities.EllipsifyPath(dest, 25));
                         continue;
                     }
                     else if (!File.Exists(source))
                     {
-                        LogMessage.Log("... Copyfile: Source '{0}' does not exist, skipping.", source);
+                        LogMessage.LogF("... Copyfile: Source '{0}' does not exist, skipping.", Utilities.EllipsifyPath(source, 25));
                         continue;
                     }
                     #endregion
@@ -8873,59 +8879,45 @@ namespace FFXI_ME_v2
                             Directory.CreateDirectory(Path.GetDirectoryName(dest).TrimEnd('\\'));
 
                         File.Copy(source, dest, true);
-                        LogMessage.Log("... Copyfile: '{0}' -> '{1}' Success", source, dest);
+                        LogMessage.LogF("... Copyfile: '{0}' -> '{1}' Success", Utilities.EllipsifyPath(source, 25), Utilities.EllipsifyPath(dest, 25));
                     }
-                    //catch (System.IO.DirectoryNotFoundException)
-                    //{
-                    //    try
-                    //    {
-                    //        Directory.CreateDirectory(Path.GetDirectoryName(dest).TrimEnd('\\'));
-                    //        File.Copy(source, dest, true);
-                    //        LogMessage.Log("... Copyfile: Created path and copied {0} to {1}.", source, dest);
-                    //    }
-                    //    catch (Exception e)
-                    //    {
-                    //        LogMessage.Log("... Copyfile: {0}", e.Message);
-                    //        continue;
-                    //    }
-                    //}
                     catch (UnauthorizedAccessException uae)
                     {
-                        LogMessage.Log("... Copyfile: {0}", uae.Message);
+                        LogMessage.LogF("... Copyfile: {0}", uae.Message);
                         continue;
                     }
                     catch (Exception exception)
                     {
-                        LogMessage.Log("... Copyfile: {0}", exception.Message);
+                        LogMessage.LogF("... Copyfile: {0}", exception.Message);
                         continue;
                     }
                     if (CleanSource)
                     {
                         File.Delete(source);
-                        LogMessage.Log("... Deleted source file {0}.", source);
+                        LogMessage.LogF("... Deleted source file {0}.", Utilities.EllipsifyPath(source));
                     }
                     #endregion
                 }
             }
-            LogMessage.Log("Done processing nodes.");
+            LogMessage.LogF("Done processing nodes.");
             if (CleanDoc)
             {
                 try
                 {
                     File.Delete(pathName);
-                    LogMessage.Log("..Deleted file {0}", pathName);
+                    LogMessage.LogF("..Deleted file {0}", Utilities.EllipsifyPath(pathName));
                 }
                 catch (Exception e)
                 {
-                    LogMessage.Log("..{0}: {1}", pathName, e.Message);
+                    LogMessage.LogF("..{0}: {1}", Utilities.EllipsifyPath(pathName), e.Message);
                 }
             }
-            else { LogMessage.Log("..{0}: Not deleting file.", pathName); }
+            else { LogMessage.LogF("..{0}: Not deleting file.", Utilities.EllipsifyPath(pathName)); }
 #if (DEBUG)
             Console.WriteLine("Program completed successfully, see logfile for specific information.");
             Console.ReadLine();
 #endif
-            LogMessage.Log("Done processing file.");
+            LogMessage.LogF("Done processing file.");
             LogMessage.Close();
             return true;
         }
@@ -9043,7 +9035,7 @@ namespace FFXI_ME_v2
                     CBook cbold = this._Obj1 as CBook;
                     CBook cbnew = this._Obj2 as CBook;
                     return String.Format("Overwrite destination book {0} with source book {1}?",
-                        Utilitiies.EllipsifyPath(cbnew.fName, 60), Utilitiies.EllipsifyPath(cbold.fName, 60));
+                        Utilities.EllipsifyPath(cbnew.fName, 60), Utilities.EllipsifyPath(cbold.fName, 60));
                 }
                 else if (this._Type == "Copy_TTL")
                 {
@@ -9051,25 +9043,25 @@ namespace FFXI_ME_v2
                     //CBook cbnew = this._Obj2 as CBook;
                     String path = this._Text;
                     return String.Format("Copy source book {0} to destination directory {1}?",
-                        Utilitiies.EllipsifyPath(cbold.fName, 60), Utilitiies.EllipsifyPath(this._Text, 60));
+                        Utilities.EllipsifyPath(cbold.fName, 60), Utilities.EllipsifyPath(this._Text, 60));
                 }
                 else if (this._Type == "Save_File")
                 {
                     CMacroFile cmf = this._Obj1 as CMacroFile;
                     return String.Format("Save changes to macrofile {0}?",
-                        (cmf != null) ? Utilitiies.EllipsifyPath(cmf.fName, 60) : "<<Unknown>>");
+                        (cmf != null) ? Utilities.EllipsifyPath(cmf.fName, 60) : "<<Unknown>>");
                 }
                 else if (this._Type == "Save_TTL")
                 {
                     CBook cb = this._Obj1 as CBook;
                     return String.Format("Save changes to book file {0}?",
-                        (cb == null) ? "<<Unknown>>" : Utilitiies.EllipsifyPath(cb.fName, 60));
+                        (cb == null) ? "<<Unknown>>" : Utilities.EllipsifyPath(cb.fName, 60));
                 }
                 else if (this._Type == "Delete_Folder")
                     return String.Format("Delete folder {0} and all subfolders and files?",
-                        Utilitiies.EllipsifyPath(this._Text, 60));
+                        Utilities.EllipsifyPath(this._Text, 60));
                 else if (this._Type == "Delete_File")
-                    return String.Format("Delete file {0}?", Utilitiies.EllipsifyPath(this._Text, 60));
+                    return String.Format("Delete file {0}?", Utilities.EllipsifyPath(this._Text, 60));
                 return String.Format("Type: '{0}' Text: '{1}' Obj1 '{2}' Obj2 '{3}'", this._Type, this._Text, this._Obj1.GetType(), this._Obj2.GetType());
             }
 
