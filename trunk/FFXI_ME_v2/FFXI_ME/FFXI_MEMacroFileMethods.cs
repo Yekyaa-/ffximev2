@@ -56,7 +56,7 @@ namespace FFXI_ME_v2
 
             public override string ToString()
             {
-                return Utilitiies.EllipsifyPath(_fName, 45);
+                return Utilities.EllipsifyPath(_fName, 45);
             }
 
             public void Load(String filename)
@@ -673,7 +673,7 @@ namespace FFXI_ME_v2
             {
                 if (this.fName == String.Empty)
                     return "<UnknownFileName>";
-                return Utilitiies.EllipsifyPath(this.fName, 50);
+                return Utilities.EllipsifyPath(this.fName, 50);
             }
             #endregion
 

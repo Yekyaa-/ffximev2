@@ -671,7 +671,7 @@ namespace FFXI_ME_v2
         #endregion
     }
 
-    static public class Utilitiies
+    static public class Utilities
     {
         #region Utilities Methods
         /// <summary>
