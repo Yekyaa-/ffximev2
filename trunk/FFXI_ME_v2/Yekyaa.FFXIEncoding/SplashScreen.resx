@@ -197,7 +197,7 @@ Please be patient...</value>
     <value>0</value>
   </data>
   <data name="label2.Text" xml:space="preserve">
-    <value>Copyright © 2007 Chris Baggett</value>
+    <value>Copyright © 2012 Chris Baggett</value>
   </data>
   <data name="label2.TextAlign" type="System.Drawing.ContentAlignment, System.Drawing">
     <value>BottomRight</value>

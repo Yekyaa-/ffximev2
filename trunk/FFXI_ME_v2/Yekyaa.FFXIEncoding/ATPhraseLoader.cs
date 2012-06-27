@@ -2450,11 +2450,11 @@ namespace Yekyaa.FFXIEncoding
                 else if (itemHeader.ID == 0xFFFF)
                     br.BaseStream.Position = itemHeader.HeaderSize + 2;
                 // Puppet Items, skip 8 bytes
-                else if ((itemHeader.ID <= 0x2BFF) && (itemHeader.ID >= 0x2000))
+                else if ((itemHeader.ID <= 0x27FF) && (itemHeader.ID >= 0x2000))
                     br.BaseStream.Position = itemHeader.HeaderSize + 10;  // Unknown is 0x04 bytes not 0x02
                 // Armor Specific Info, 22 bytes to skip to get to text
                 // 26 in March 10, 2008 Update (new UINT32)
-                else if ((itemHeader.ID <= 0x3FFF) && (itemHeader.ID >= 0x2C00))
+                else if ((itemHeader.ID <= 0x3FFF) && (itemHeader.ID >= 0x2800))
                     br.BaseStream.Position = itemHeader.HeaderSize + 26;
                 // Weapon Specific Info, 30 bytes to skip
                 // 34 bytes in March 10, 2008 Update (new UINT32)
