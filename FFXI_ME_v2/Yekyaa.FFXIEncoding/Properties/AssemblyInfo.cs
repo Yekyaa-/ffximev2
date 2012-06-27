@@ -11,7 +11,7 @@ using System.Resources;
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("Baggett Enterprises, Inc.")]
 [assembly: AssemblyProduct("FFXI Encoding DLL")]
-[assembly: AssemblyCopyright("Copyright © Chris Baggett 2007-2010")]
+[assembly: AssemblyCopyright("Copyright © Chris Baggett 2007-2012")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 
@@ -33,6 +33,6 @@ using System.Resources;
 // You can specify all the values or you can default the Build and Revision Numbers 
 // by using the '*' as shown below:
 // [assembly: AssemblyVersion("1.0.*")]
-[assembly: AssemblyVersion("2.2010.7.1")]
-[assembly: AssemblyFileVersion("2.2010.7.1")]
+[assembly: AssemblyVersion("2.2012.6.26")]
+[assembly: AssemblyFileVersion("2.2012.6.26")]
 [assembly: NeutralResourcesLanguageAttribute("en")]
