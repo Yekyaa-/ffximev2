@@ -11,7 +11,7 @@ using System.Resources;
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("Created by Yekyaa Of Pandemonium... err Asura")]
 [assembly: AssemblyProduct("Yekyaa's FFXI ME! v2")]
-[assembly: AssemblyCopyright("Copyright © Chris Baggett 2005-2012")]
+[assembly: AssemblyCopyright("Copyright © Chris Baggett 2005-2014")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 
@@ -30,6 +30,6 @@ using System.Resources;
 //      Build Number
 //      Revision
 //
-[assembly: AssemblyVersion("2.2012.6.26")]
-[assembly: AssemblyFileVersion("2.2012.6.26")]
+[assembly: AssemblyVersion("2.2014.1.9")]
+[assembly: AssemblyFileVersion("2.2014.1.9")]
 [assembly: NeutralResourcesLanguageAttribute("en")]
