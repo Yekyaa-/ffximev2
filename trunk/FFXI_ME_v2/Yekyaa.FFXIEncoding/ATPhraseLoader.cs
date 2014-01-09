@@ -2440,12 +2440,14 @@ namespace Yekyaa.FFXIEncoding
                 long data_pos = 0;
                 UInt32 num_strings = 0, offset = 0, flags = 0;
                 // Objects (General Items)  skip 6 bytes
+                // Objects (General Items)  skip 10 bytes (another 4 [UINT32]) sometime before January 8, 2014)
                 if ((itemHeader.ID <= 0x0FFF) && (itemHeader.ID >= 0x0000))
-                    br.BaseStream.Position = itemHeader.HeaderSize + 6;
+                    br.BaseStream.Position = itemHeader.HeaderSize + 10;
                 // Usable items skip 2 bytes
                 // Usable Items skip 6 bytes as of March 10, 2008 Update (new UINT32)
+                // Usable Items skip another 4 bytes (total of 10) sometime before January 8, 2014 (new UINT32)
                 else if ((itemHeader.ID <= 0x1FFF) && (itemHeader.ID >= 0x1000))
-                    br.BaseStream.Position = itemHeader.HeaderSize + 6;
+                    br.BaseStream.Position = itemHeader.HeaderSize + 10;
                 // Gil skip just 2 bytes
                 else if (itemHeader.ID == 0xFFFF)
                     br.BaseStream.Position = itemHeader.HeaderSize + 2;
