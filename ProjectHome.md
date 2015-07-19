@@ -1,0 +1,1 @@
+This is an offline Macro Editor built to run on Windows Operating Systems (WinXP and later).  Designed to allow one to edit in-game Macros for the game Final Fantasy XI with support for Windows commands, Clipboard Support, and Auto-Translate phrase support.
